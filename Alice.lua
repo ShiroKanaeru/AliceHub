@@ -3692,11 +3692,11 @@ if useStudio then
 		LoadingTitle = "AliceHub Interface Suite",
 		Theme = 'Default',
 		Icon = 0,
-		LoadingSubtitle = "by Sirius",
+		LoadingSubtitle = "by ShiroKanaeru",
 		ConfigurationSaving = {
 			Enabled = true,
 			FolderName = nil, -- Create a custom folder for your hub/game
-			FileName = "Big Hub52"
+			FileName = "AliceHub"
 		},
 		Discord = {
 			Enabled = false,
