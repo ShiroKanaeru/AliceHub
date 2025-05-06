@@ -1,4 +1,4 @@
-[[
+--[[
 
 	Alice Hub
 	By ShiroKanaeru
@@ -16,8 +16,8 @@ local function getService(name)
     return if cloneref then cloneref(service) else service
 end
 
-Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
-Errors with the function are caught and logged to the output
+--Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
+--Errors with the function are caught and logged to the output
 local function loadWithTimeout(url: string, timeout: number?): ...any
 	assert(type(url) == "string", "Expected string, got " .. type(url))
 	timeout = timeout or 5
@@ -25,17 +25,17 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	local success, result = false, nil
 
 	local requestThread = task.spawn(function()
-		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url)game:HttpGet(url)
-		If the request fails the content can be empty, even if fetchSuccess is true
+		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url) -- game:HttpGet(url)
+		-- If the request fails the content can be empty, even if fetchSuccess is true
 		if not fetchSuccess or #fetchResult == 0 then
 			if #fetchResult == 0 then
-				fetchResult = "Empty response" Set the error message
+				fetchResult = "Empty response" -- Set the error message
 			end
 			success, result = false, fetchResult
 			requestCompleted = true
 			return
 		end
-		local content = fetchResult Fetched content
+		local content = fetchResult -- Fetched content
 		local execSuccess, execResult = pcall(function()
 			return loadstring(content)()
 		end)
