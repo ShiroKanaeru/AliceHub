@@ -1,6 +1,6 @@
 --[[
 
-	Alice Hub
+	AliceHub
 	By ShiroKanaeru
 
 	ShiroKanaeru | Designing + Programming
@@ -25,11 +25,11 @@ local function loadWithTimeout(url: string, timeout: number?): ...any
 	local success, result = false, nil
 
 	local requestThread = task.spawn(function()
-		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url) -- game:HttpGet(url)
+		local fetchSuccess, fetchResult = pcall(game.HttpGet, game, url) --game:HttpGet(url)
 		-- If the request fails the content can be empty, even if fetchSuccess is true
 		if not fetchSuccess or #fetchResult == 0 then
 			if #fetchResult == 0 then
-				fetchResult = "Empty response" -- Set the error message
+				fetchResult = "Empty response" --Set the error message
 			end
 			success, result = false, fetchResult
 			requestCompleted = true
@@ -75,7 +75,7 @@ local ConfigurationExtension = ".rfld"
 local settingsTable = {
 	General = {
 		-- if needs be in order just make getSetting(name)
-		AliceHubOpen = {Type = 'bind', Value = 'K', Name = 'Alice Keybind'},
+		AliceHubOpen = {Type = 'bind', Value = 'K', Name = 'AliceHub Keybind'},
 		-- buildwarnings
 		-- AliceHubprompts
 
@@ -112,7 +112,7 @@ local function loadSettings()
 			-- for debug in studio
 			if useStudio then
 				file = [[
-		{"General":{"AliceOpen":{"Value":"K","Type":"bind","Name":"Alice Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Alice Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}},"System":{"usageAnalytics":{"Value":false,"Type":"toggle","Name":"Anonymised Analytics","Element":{"Ext":true,"Name":"Anonymised Analytics","Set":null,"CurrentValue":false,"Callback":null}}}}
+		{"General":{"AliceHubOpen":{"Value":"K","Type":"bind","Name":"AliceHub Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"AliceHub Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}},"System":{"usageAnalytics":{"Value":false,"Type":"toggle","Name":"Anonymised Analytics","Element":{"Ext":true,"Name":"Anonymised Analytics","Set":null,"CurrentValue":false,"Callback":null}}}}
 	]]
 			end
 
@@ -151,7 +151,7 @@ local function loadSettings()
 	
 	if not success then 
 		if writefile then
-			warn('Alice had an issue accessing configuration saving capability.')
+			warn('AliceHub had an issue accessing configuration saving capability.')
 		end
 	end
 end
@@ -170,7 +170,7 @@ end
 --	local fileFunctionsAvailable = isfile and writefile and readfile
 
 --	if not fileFunctionsAvailable and not useStudio then
---		warn('Alice Interface Suite | Alice Analytics:\n\n\nAs you don\'t have file functionality with your executor, we are unable to save whether you want to opt in or out to analytics.\nIf you do not want to take part in anonymised usage statistics, let us know in our telegram at t.me/shirostoree and we will manually opt you out.')
+--		warn('AliceHub Interface Suite | AliceHub Analytics:\n\n\nAs you don\'t have file functionality with your executor, we are unable to save whether you want to opt in or out to analytics.\nIf you do not want to take part in anonymised usage statistics, let us know in our telegram at t.me/shirostoree and we will manually opt you out.')
 --		analytics = true	
 --	else
 --		prompt.create(
@@ -225,7 +225,7 @@ if debugX then
 	warn('Moving on to continue initialisation')
 end
 
-local AliceLibrary = {
+local AliceHubLibrary = {
 	Flags = {},
 	Theme = {
 		Default = {
@@ -615,14 +615,14 @@ local CoreGui = getService("CoreGui")
 
 -- Interface Management
 
-local Alice = useStudio and script.Parent:FindFirstChild('Alice') or game:GetObjects("rbxassetid://10804731440")[1]
+local AliceHub = useStudio and script.Parent:FindFirstChild('AliceHub') or game:GetObjects("rbxassetid://10804731440")[1]
 local buildAttempts = 0
 local correctBuild = false
 local warned
 local globalLoaded
 
 repeat
-	if AliceHub:FindFirstChild('Build') and Alice.Build.Value == InterfaceBuild then
+	if AliceHub:FindFirstChild('Build') and AliceHub.Build.Value == InterfaceBuild then
 		correctBuild = true
 		break
 	end
@@ -630,12 +630,12 @@ repeat
 	correctBuild = false
 
 	if not warned then
-		warn('Alice | Build Mismatch')
-		print('Alice may encounter issues as you are running an incompatible interface version ('.. ((Alice:FindFirstChild('Build') and Alice.Build.Value) or 'No Build') ..').\n\nThis version of Alice is intended for interface build '..InterfaceBuild..'.')
+		warn('AliceHub | Build Mismatch')
+		print('AliceHub may encounter issues as you are running an incompatible interface version ('.. ((AliceHub:FindFirstChild('Build') and AliceHub.Build.Value) or 'No Build') ..').\n\nThis version of AliceHub is intended for interface build '..InterfaceBuild..'.')
 		warned = true
 	end
 
-	toDestroy, Alice = Alice, useStudio and script.Parent:FindFirstChild('Alice') or game:GetObjects("rbxassetid://10804731440")[1]
+	toDestroy, AliceHub = AliceHub, useStudio and script.Parent:FindFirstChild('AliceHub') or game:GetObjects("rbxassetid://10804731440")[1]
 	if toDestroy and not useStudio then toDestroy:Destroy() end
 
 	buildAttempts = buildAttempts + 1
@@ -644,28 +644,28 @@ until buildAttempts >= 2
 AliceHub.Enabled = false
 
 if gethui then
-	Alice.Parent = gethui()
+	AliceHub.Parent = gethui()
 elseif syn and syn.protect_gui then 
 	syn.protect_gui(AliceHub)
-	Alice.Parent = CoreGui
+	AliceHub.Parent = CoreGui
 elseif not useStudio and CoreGui:FindFirstChild("RobloxGui") then
-	Alice.Parent = CoreGui:FindFirstChild("RobloxGui")
+	AliceHub.Parent = CoreGui:FindFirstChild("RobloxGui")
 elseif not useStudio then
-	Alice.Parent = CoreGui
+	AliceHub.Parent = CoreGui
 end
 
 if gethui then
 	for _, Interface in ipairs(gethui():GetChildren()) do
-		if Interface.Name == Alice.Name and Interface ~= Alice then
+		if Interface.Name == AliceHub.Name and Interface ~= AliceHub then
 			Interface.Enabled = false
-			Interface.Name = "Alice-New"
+			Interface.Name = "AliceHub-New"
 		end
 	end
 elseif not useStudio then
 	for _, Interface in ipairs(CoreGui:GetChildren()) do
-		if Interface.Name == Alice.Name and Interface ~= Alice then
+		if Interface.Name == AliceHub.Name and Interface ~= AliceHub then
 			Interface.Enabled = false
-			Interface.Name = "Alice-New"
+			Interface.Name = "AliceHub-New"
 		end
 	end
 end
