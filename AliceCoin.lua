@@ -31,44 +31,50 @@ local throwParams = {
     5
 }
 
--- ================== BUAT GUI (SUDAH DIRAPIKAN) ==================
+-- ================== BUAT GUI (TANPA GLASS + AUTO SCROLL) ==================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "aliceHUB"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama (Rotasi dihapus, ukuran 320x400 biar muat di HP)
+-- Frame utama
 local mainFrame = Instance.new("ScrollingFrame")
-mainFrame.Size = UDim2.new(0, 320, 0, 400) 
-mainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
+mainFrame.Size = UDim2.new(0, 340, 0, 460)
+mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-mainFrame.BackgroundTransparency = 0.1
+mainFrame.BackgroundTransparency = 0.05 -- Tanpa glass, tetep transparan tapi gak ada efek hitam
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
 mainFrame.ScrollBarThickness = 4
-mainFrame.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 200)
+mainFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 200, 255)
 mainFrame.Active = true
 mainFrame.Draggable = true
+mainFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- PENTING! Biar isinya gak kepotong
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 14)
 corner.Parent = mainFrame
 
--- Glass Efek (ZIndex 0 supaya gak nutup tombol)
-local glass = Instance.new("Frame")
-glass.Size = UDim2.new(1, 0, 1, 0)
-glass.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-glass.BackgroundTransparency = 0.92
-glass.BorderSizePixel = 0
-glass.ZIndex = 0
-glass.Parent = mainFrame
+-- Padding supaya isi GUI gak nempel ke pinggiran
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 10)
+padding.PaddingBottom = UDim.new(0, 10)
+padding.PaddingLeft = UDim.new(0, 10)
+padding.PaddingRight = UDim.new(0, 10)
+padding.Parent = mainFrame
+
+-- Layout untuk menyusun isi GUI ke bawah
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = mainFrame
 
 -- ================== HEADER ==================
 local header = Instance.new("Frame")
-header.Size = UDim2.new(1, -10, 0, 45)
-header.Position = UDim2.new(0, 5, 0, 0)
+header.Size = UDim2.new(1, 0, 0, 45)
 header.BackgroundTransparency = 1
-header.ZIndex = 2
+header.LayoutOrder = 0 -- Urutan paling atas
 header.Parent = mainFrame
 
 local title = Instance.new("TextLabel")
@@ -76,7 +82,7 @@ title.Size = UDim2.new(0.7, 0, 0.6, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.Text = "✦ aliceHUB ✦"
 title.TextColor3 = Color3.fromRGB(220, 200, 255)
-title.TextSize = 16
+title.TextSize = 17
 title.Font = Enum.Font.GothamBold
 title.BackgroundTransparency = 1
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -125,39 +131,22 @@ closeCorner.CornerRadius = UDim.new(0, 6)
 closeCorner.Parent = closeBtn
 closeBtn.Parent = header
 
--- Divider
+-- Divider (garis pemisah header dan konten)
 local divider = Instance.new("Frame")
-divider.Size = UDim2.new(1, -20, 0, 1)
-divider.Position = UDim2.new(0, 10, 0, 45)
+divider.Size = UDim2.new(1, 0, 0, 1)
 divider.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
 divider.BackgroundTransparency = 0.5
 divider.BorderSizePixel = 0
-divider.ZIndex = 2
+divider.LayoutOrder = 1
 divider.Parent = mainFrame
 
--- ================== KONTEN FITUR ==================
-local contentContainer = Instance.new("Frame")
-contentContainer.Size = UDim2.new(1, -20, 1, -55)
-contentContainer.Position = UDim2.new(0, 10, 0, 46)
-contentContainer.BackgroundTransparency = 1
-contentContainer.ZIndex = 2
-contentContainer.Parent = mainFrame
-
-local contentLayout = Instance.new("UIListLayout")
-contentLayout.Padding = UDim.new(0, 6)
-contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-contentLayout.Parent = contentContainer
-
--- ================== FUNGSI BANTUAN ==================
-
--- Fungsi Switch ON/OFF
+-- ================== FUNGSI SWITCH & DROPDOWN ==================
 local function createSwitch(labelText, order, onToggle)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -10, 0, 34)
+    container.Size = UDim2.new(1, 0, 0, 34)
     container.BackgroundTransparency = 1
     container.LayoutOrder = order
-    container.Parent = contentContainer
+    container.Parent = mainFrame
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.6, 0, 1, 0)
@@ -225,13 +214,12 @@ local function createSwitch(labelText, order, onToggle)
     }
 end
 
--- Fungsi Dropdown yang udah diperbaiki (Bisa di-scroll, gak bakal keluar layar)
 local function createDropdown(labelText, options, order, onSelect)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -10, 0, 34)
+    container.Size = UDim2.new(1, 0, 0, 34)
     container.BackgroundTransparency = 1
     container.LayoutOrder = order
-    container.Parent = contentContainer
+    container.Parent = mainFrame
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.35, 0, 1, 0)
@@ -258,7 +246,7 @@ local function createDropdown(labelText, options, order, onSelect)
     dc.CornerRadius = UDim.new(0, 5)
     dc.Parent = dropdownBtn
 
-    -- Ubah list jadi ScrollingFrame, batasi tinggi 120px
+    -- Daftar List Coin (Batasi tinggi maks 130px, sisanya scroll)
     local listFrame = Instance.new("ScrollingFrame")
     listFrame.Size = UDim2.new(0.6, 0, 0, 0)
     listFrame.Position = UDim2.new(0.35, 0, 0.9, 0)
@@ -278,8 +266,6 @@ local function createDropdown(labelText, options, order, onSelect)
     listLayout.Parent = listFrame
 
     local selected = options[1]
-    local totalHeight = 0
-
     local function rebuildList()
         for _, child in ipairs(listFrame:GetChildren()) do
             if child:IsA("TextButton") then child:Destroy() end
@@ -311,9 +297,8 @@ local function createDropdown(labelText, options, order, onSelect)
     dropdownBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         if isOpen then
-            totalHeight = #options * 26 + 6
-            local maxHeight = 120 -- Batasi kebuka paling tinggi 120px, sisanya scroll
-            listFrame.Size = UDim2.new(0.6, 0, 0, math.min(totalHeight, maxHeight))
+            local maxHeight = 130 -- Biar gak nyembur ke bawah layar
+            listFrame.Size = UDim2.new(0.6, 0, 0, math.min(#options * 26 + 6, maxHeight))
         else
             listFrame.Size = UDim2.new(0.6, 0, 0, 0)
         end
@@ -327,15 +312,12 @@ local states = { throw = false, buy = false, sell = false, luck = false, value =
 local threads = {}
 local isMinimized = false
 
--- ================== BUAT FITUR ==================
-local orderIdx = 0
+-- ================== BUAT FITUR (Urutan Menu) ==================
+local orderIdx = 2 -- Mulai dari 2 (karena 0=header, 1=divider)
 
 -- 1. Auto Throw
-local throwDropdown = createDropdown("Throw Coin", coinList, orderIdx, function(opt)
-    throwParams[3] = opt
-end)
+local throwDropdown = createDropdown("Throw Coin", coinList, orderIdx, function(opt) throwParams[3] = opt end)
 orderIdx = orderIdx + 1
-
 local throwSwitch = createSwitch("Auto Throw", orderIdx, function(state)
     states.throw = state
     if state then
@@ -345,17 +327,13 @@ local throwSwitch = createSwitch("Auto Throw", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.throw then task.cancel(threads.throw) end
-        threads.throw = nil
-    end
+    elseif threads.throw then task.cancel(threads.throw); threads.throw = nil end
 end)
 orderIdx = orderIdx + 1
 
 -- 2. Auto Buy
-local buyDropdown = createDropdown("Buy Coin", coinList, orderIdx, function(opt) end)
+local buyDropdown = createDropdown("Buy Coin", coinList, orderIdx)
 orderIdx = orderIdx + 1
-
 local buySwitch = createSwitch("Auto Buy", orderIdx, function(state)
     states.buy = state
     if state then
@@ -365,10 +343,7 @@ local buySwitch = createSwitch("Auto Buy", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.buy then task.cancel(threads.buy) end
-        threads.buy = nil
-    end
+    elseif threads.buy then task.cancel(threads.buy); threads.buy = nil end
 end)
 orderIdx = orderIdx + 1
 
@@ -382,14 +357,11 @@ local sellSwitch = createSwitch("Auto Sell All", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.sell then task.cancel(threads.sell) end
-        threads.sell = nil
-    end
+    elseif threads.sell then task.cancel(threads.sell); threads.sell = nil end
 end)
 orderIdx = orderIdx + 1
 
--- 4. Auto Upgrade Luck
+-- 4. Upgrade Luck
 local luckSwitch = createSwitch("Upgrade Luck", orderIdx, function(state)
     states.luck = state
     if state then
@@ -399,14 +371,11 @@ local luckSwitch = createSwitch("Upgrade Luck", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.luck then task.cancel(threads.luck) end
-        threads.luck = nil
-    end
+    elseif threads.luck then task.cancel(threads.luck); threads.luck = nil end
 end)
 orderIdx = orderIdx + 1
 
--- 5. Auto Upgrade Value (Cash)
+-- 5. Upgrade Value
 local valueSwitch = createSwitch("Upgrade Value (Cash)", orderIdx, function(state)
     states.value = state
     if state then
@@ -416,10 +385,7 @@ local valueSwitch = createSwitch("Upgrade Value (Cash)", orderIdx, function(stat
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.value then task.cancel(threads.value) end
-        threads.value = nil
-    end
+    elseif threads.value then task.cancel(threads.value); threads.value = nil end
 end)
 orderIdx = orderIdx + 1
 
@@ -433,15 +399,27 @@ orderIdx = orderIdx + 1
 -- ================== FUNGSI MINIMIZE & CLOSE ==================
 local function minimizeGUI()
     isMinimized = not isMinimized
-    contentContainer.Visible = not isMinimized
-    divider.Visible = not isMinimized
-    minBtn.Text = isMinimized and "+" or "_"
     if isMinimized then
-        mainFrame.Size = UDim2.new(0, 320, 0, 65)
-        mainFrame.Position = UDim2.new(0.5, -160, 0.8, -35)
+        mainFrame.Size = UDim2.new(0, 340, 0, 70)
+        mainFrame.Position = UDim2.new(0.5, -170, 0.8, -35)
+        minBtn.Text = "+"
+        -- Sembunyikan konten di bawah header
+        divider.Visible = false
+        for _, child in ipairs(mainFrame:GetChildren()) do
+            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 2 then
+                child.Visible = false
+            end
+        end
     else
-        mainFrame.Size = UDim2.new(0, 320, 0, 400)
-        mainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
+        mainFrame.Size = UDim2.new(0, 340, 0, 460)
+        mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
+        minBtn.Text = "_"
+        divider.Visible = true
+        for _, child in ipairs(mainFrame:GetChildren()) do
+            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 2 then
+                child.Visible = true
+            end
+        end
     end
 end
 
@@ -455,7 +433,6 @@ end
 minBtn.MouseButton1Click:Connect(minimizeGUI)
 closeBtn.MouseButton1Click:Connect(closeGUI)
 
--- ================== CLEANUP SAAT CLOSE ==================
 screenGui.AncestryChanged:Connect(function()
     if not screenGui.Parent then
         for _, name in ipairs({"throw","buy","sell","luck","value"}) do
@@ -470,4 +447,4 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
-print("✨ AliceHUB Elegant (Rapi di HP) siap digunakan!")
+print("✨ AliceHUB (Fix versi HP, Auto Scroll) siap digunakan!")
