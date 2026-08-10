@@ -31,51 +31,55 @@ local throwParams = {
     5
 }
 
--- ================== BUAT GUI (TANPA GLASS + AUTO SCROLL) ==================
+-- ================== BUAT GUI (ARSITEKTUR BARU ANTI BUG) ==================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "aliceHUB"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama
-local mainFrame = Instance.new("ScrollingFrame")
+-- Frame Utama (Background)
+local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 340, 0, 460)
 mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-mainFrame.BackgroundTransparency = 0.05 -- Tanpa glass, tetep transparan tapi gak ada efek hitam
+mainFrame.BackgroundTransparency = 0.08
 mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
-mainFrame.ScrollBarThickness = 4
-mainFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 200, 255)
 mainFrame.Active = true
 mainFrame.Draggable = true
-mainFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- PENTING! Biar isinya gak kepotong
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 14)
 corner.Parent = mainFrame
 
--- Padding supaya isi GUI gak nempel ke pinggiran
-local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 10)
-padding.PaddingBottom = UDim.new(0, 10)
-padding.PaddingLeft = UDim.new(0, 10)
-padding.PaddingRight = UDim.new(0, 10)
-padding.Parent = mainFrame
+-- Scroller utama (Supaya semua menu bisa digeser ke bawah)
+local mainScroller = Instance.new("ScrollingFrame")
+mainScroller.Size = UDim2.new(1, 0, 1, 0)
+mainScroller.BackgroundTransparency = 1
+mainScroller.BorderSizePixel = 0
+mainScroller.ScrollBarThickness = 4
+mainScroller.ScrollBarImageColor3 = Color3.fromRGB(200, 200, 255)
+mainScroller.Parent = mainFrame
 
--- Layout untuk menyusun isi GUI ke bawah
+-- Wadah Konten (Memakai AutomaticSize, inti dari perbaikan biar gak ilang)
+local container = Instance.new("Frame")
+container.Size = UDim2.new(1, -20, 0, 0)
+container.Position = UDim2.new(0, 10, 0, 0)
+container.BackgroundTransparency = 1
+container.AutomaticSize = Enum.AutomaticSize.Y
+container.Parent = mainScroller
+
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 8)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = mainFrame
+layout.Parent = container
 
 -- ================== HEADER ==================
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0, 45)
 header.BackgroundTransparency = 1
-header.LayoutOrder = 0 -- Urutan paling atas
-header.Parent = mainFrame
+header.LayoutOrder = 0
+header.Parent = container
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(0.7, 0, 0.6, 0)
@@ -131,22 +135,22 @@ closeCorner.CornerRadius = UDim.new(0, 6)
 closeCorner.Parent = closeBtn
 closeBtn.Parent = header
 
--- Divider (garis pemisah header dan konten)
+-- Divider
 local divider = Instance.new("Frame")
 divider.Size = UDim2.new(1, 0, 0, 1)
 divider.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
 divider.BackgroundTransparency = 0.5
 divider.BorderSizePixel = 0
 divider.LayoutOrder = 1
-divider.Parent = mainFrame
+divider.Parent = container
 
--- ================== FUNGSI SWITCH & DROPDOWN ==================
+-- ================== FUNGSI SWITCH & DROPDOWN (FIXED) ==================
 local function createSwitch(labelText, order, onToggle)
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 34)
-    container.BackgroundTransparency = 1
-    container.LayoutOrder = order
-    container.Parent = mainFrame
+    local containerItem = Instance.new("Frame")
+    containerItem.Size = UDim2.new(1, 0, 0, 34)
+    containerItem.BackgroundTransparency = 1
+    containerItem.LayoutOrder = order
+    containerItem.Parent = container
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.6, 0, 1, 0)
@@ -156,7 +160,7 @@ local function createSwitch(labelText, order, onToggle)
     label.Font = Enum.Font.GothamSemibold
     label.BackgroundTransparency = 1
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = container
+    label.Parent = containerItem
 
     local switchBtn = Instance.new("ImageButton")
     switchBtn.Size = UDim2.new(0, 40, 0, 22)
@@ -167,7 +171,7 @@ local function createSwitch(labelText, order, onToggle)
     switchBtn.Image = "rbxassetid://3570695787"
     switchBtn.ScaleType = Enum.ScaleType.Slice
     switchBtn.SliceCenter = Rect.new(4, 4, 12, 12)
-    switchBtn.Parent = container
+    switchBtn.Parent = containerItem
 
     local knob = Instance.new("ImageLabel")
     knob.Size = UDim2.new(0, 16, 0, 16)
@@ -199,7 +203,7 @@ local function createSwitch(labelText, order, onToggle)
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.BackgroundTransparency = 1
     statusLabel.TextXAlignment = Enum.TextXAlignment.Right
-    statusLabel.Parent = container
+    statusLabel.Parent = containerItem
 
     local oldToggle = onToggle
     local function newOnToggle(newState)
@@ -215,11 +219,11 @@ local function createSwitch(labelText, order, onToggle)
 end
 
 local function createDropdown(labelText, options, order, onSelect)
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 34)
-    container.BackgroundTransparency = 1
-    container.LayoutOrder = order
-    container.Parent = mainFrame
+    local containerItem = Instance.new("Frame")
+    containerItem.Size = UDim2.new(1, 0, 0, 34)
+    containerItem.BackgroundTransparency = 1
+    containerItem.LayoutOrder = order
+    containerItem.Parent = container
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.35, 0, 1, 0)
@@ -229,7 +233,7 @@ local function createDropdown(labelText, options, order, onSelect)
     label.Font = Enum.Font.Gotham
     label.BackgroundTransparency = 1
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = container
+    label.Parent = containerItem
 
     local dropdownBtn = Instance.new("TextButton")
     dropdownBtn.Size = UDim2.new(0.6, 0, 0.75, 0)
@@ -241,12 +245,12 @@ local function createDropdown(labelText, options, order, onSelect)
     dropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
     dropdownBtn.BorderSizePixel = 0
     dropdownBtn.AutoButtonColor = false
-    dropdownBtn.Parent = container
+    dropdownBtn.Parent = containerItem
     local dc = Instance.new("UICorner")
     dc.CornerRadius = UDim.new(0, 5)
     dc.Parent = dropdownBtn
 
-    -- Daftar List Coin (Batasi tinggi maks 130px, sisanya scroll)
+    -- FIX: List Frame dengan CanvasSize Manual biar itemnya muncul
     local listFrame = Instance.new("ScrollingFrame")
     listFrame.Size = UDim2.new(0.6, 0, 0, 0)
     listFrame.Position = UDim2.new(0.35, 0, 0.9, 0)
@@ -255,7 +259,7 @@ local function createDropdown(labelText, options, order, onSelect)
     listFrame.ClipsDescendants = true
     listFrame.ScrollBarThickness = 3
     listFrame.ZIndex = 5
-    listFrame.Parent = container
+    listFrame.Parent = containerItem
     local lc = Instance.new("UICorner")
     lc.CornerRadius = UDim.new(0, 5)
     lc.Parent = listFrame
@@ -270,6 +274,8 @@ local function createDropdown(labelText, options, order, onSelect)
         for _, child in ipairs(listFrame:GetChildren()) do
             if child:IsA("TextButton") then child:Destroy() end
         end
+        
+        local totalHeight = 0
         for _, opt in ipairs(options) do
             local btn = Instance.new("TextButton")
             btn.Size = UDim2.new(1, 0, 0, 24)
@@ -289,7 +295,10 @@ local function createDropdown(labelText, options, order, onSelect)
                 listFrame.Size = UDim2.new(0.6, 0, 0, 0)
                 if onSelect then onSelect(opt) end
             end)
+            totalHeight = totalHeight + 26
         end
+        -- KUNCI UTAMA: Ini bikin item yang ada di scrollbarnya jadi kelihatan
+        listFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
     end
     rebuildList()
 
@@ -297,8 +306,11 @@ local function createDropdown(labelText, options, order, onSelect)
     dropdownBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         if isOpen then
-            local maxHeight = 130 -- Biar gak nyembur ke bawah layar
-            listFrame.Size = UDim2.new(0.6, 0, 0, math.min(#options * 26 + 6, maxHeight))
+            local maxHeight = 130
+            local totalListHeight = #options * 26 + 6
+            listFrame.Size = UDim2.new(0.6, 0, 0, math.min(totalListHeight, maxHeight))
+            -- Memastikan CanvasSize tetap aman
+            listFrame.CanvasSize = UDim2.new(0, 0, 0, totalListHeight)
         else
             listFrame.Size = UDim2.new(0.6, 0, 0, 0)
         end
@@ -312,8 +324,8 @@ local states = { throw = false, buy = false, sell = false, luck = false, value =
 local threads = {}
 local isMinimized = false
 
--- ================== BUAT FITUR (Urutan Menu) ==================
-local orderIdx = 2 -- Mulai dari 2 (karena 0=header, 1=divider)
+-- ================== BUAT FITUR ==================
+local orderIdx = 2 
 
 -- 1. Auto Throw
 local throwDropdown = createDropdown("Throw Coin", coinList, orderIdx, function(opt) throwParams[3] = opt end)
@@ -403,23 +415,12 @@ local function minimizeGUI()
         mainFrame.Size = UDim2.new(0, 340, 0, 70)
         mainFrame.Position = UDim2.new(0.5, -170, 0.8, -35)
         minBtn.Text = "+"
-        -- Sembunyikan konten di bawah header
-        divider.Visible = false
-        for _, child in ipairs(mainFrame:GetChildren()) do
-            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 2 then
-                child.Visible = false
-            end
-        end
+        container.Visible = false
     else
         mainFrame.Size = UDim2.new(0, 340, 0, 460)
         mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
         minBtn.Text = "_"
-        divider.Visible = true
-        for _, child in ipairs(mainFrame:GetChildren()) do
-            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 2 then
-                child.Visible = true
-            end
-        end
+        container.Visible = true
     end
 end
 
@@ -447,4 +448,4 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
-print("✨ AliceHUB (Fix versi HP, Auto Scroll) siap digunakan!")
+print("✨ AliceHUB (Final Fix! Anti drop-down kosong) siap digunakan!")
