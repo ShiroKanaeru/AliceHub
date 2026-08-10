@@ -1,424 +1,920 @@
-local player = game.Players.LocalPlayer
-local replicatedStorage = game:GetService("ReplicatedStorage")
+--[[
+    ╔══════════════════════════════════════╗
+             AliceHUB v2
+        Clean UI / Stable Structure
+    ╚══════════════════════════════════════╝
+]]
 
--- ================== DAFTAR COIN ==================
+-- =========================================================
+-- SERVICES
+-- =========================================================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UIS = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- =========================================================
+-- CONFIG
+-- =========================================================
+
+local CONFIG = {
+    PanelWidth = 340,
+    PanelHeight = 400,
+
+    Background = Color3.fromRGB(30, 32, 40),
+    Secondary = Color3.fromRGB(40, 45, 60),
+    DropdownBackground = Color3.fromRGB(25, 28, 35),
+
+    Text = Color3.fromRGB(235, 235, 245),
+    SecondaryText = Color3.fromRGB(200, 200, 230),
+
+    ToggleOff = Color3.fromRGB(50, 55, 65),
+    ToggleOn = Color3.fromRGB(80, 200, 100),
+
+    LoopDelay = 0.5,
+}
+
+-- =========================================================
+-- COIN LIST
+-- =========================================================
+
 local coinList = {
-    "Basic Coin", "Copper Coin", "Fortune Coin", "Fire Coin", "Volt Coin",
-    "Aether Coin", "Starlight Coin", "Galaxy Coin", "Void Coin", "Chronos Coin",
-    "Eclipse Coin", "Mirage Coin", "Obsidian Coin", "Tempest Coin", "Soul Coin",
-    "Paradox Coin", "Miracle Coin", "Nexus Coin", "Apex Coin", "Infinity Coin",
-    "Grace Coin", "Dominion Coin", "Empyrean Coin", "Atlas Coin", "Judgement Coin",
-    "Hercules Coin", "Helios Coin", "Nyx Coin", "Titan Coin", "Zeus Coin",
-    "Runic Coin", "Amethyst Coin", "Merlin Coin", "Eldritch Coin", "Avalon Coin",
-    "Dragonheart Coin", "Phoenix Coin",
+    "Basic Coin",
+    "Copper Coin",
+    "Fortune Coin",
+    "Fire Coin",
+    "Volt Coin",
+    "Aether Coin",
+    "Starlight Coin",
+    "Galaxy Coin",
+    "Void Coin",
+    "Chronos Coin",
+    "Eclipse Coin",
+    "Mirage Coin",
+    "Obsidian Coin",
+    "Tempest Coin",
+    "Soul Coin",
+    "Paradox Coin",
+    "Miracle Coin",
+    "Nexus Coin",
+    "Apex Coin",
+    "Infinity Coin",
+    "Grace Coin",
+    "Dominion Coin",
+    "Empyrean Coin",
+    "Atlas Coin",
+    "Judgement Coin",
+    "Hercules Coin",
+    "Helios Coin",
+    "Nyx Coin",
+    "Titan Coin",
+    "Zeus Coin",
+    "Runic Coin",
+    "Amethyst Coin",
+    "Merlin Coin",
+    "Eldritch Coin",
+    "Avalon Coin",
+    "Dragonheart Coin",
+    "Phoenix Coin",
 }
 
--- ================== REMOTE EVENTS ==================
+-- =========================================================
+-- REMOTES
+-- =========================================================
+
 local events = {
-    throw = replicatedStorage.Assets.Events.CoinLanded,
-    buy = replicatedStorage.Assets.Events.BuyCoin,
-    sell = replicatedStorage.Assets.Events.SellAll,
-    upgrade = replicatedStorage.Assets.Events.RequestUpgrade,
-    afk = replicatedStorage.Assets.Events.SetAFKSafe,
+    throw = ReplicatedStorage.Assets.Events.CoinLanded,
+    buy = ReplicatedStorage.Assets.Events.BuyCoin,
+    sell = ReplicatedStorage.Assets.Events.SellAll,
+    upgrade = ReplicatedStorage.Assets.Events.RequestUpgrade,
+    afk = ReplicatedStorage.Assets.Events.SetAFKSafe,
 }
 
-local throwParams = {
-    1.4278748995675,
-    Vector3.new(-1158.4721679688, 0.72600001096725, -176.51705932617),
-    coinList[1],
-    nil,
-    nil,
-    5
+-- =========================================================
+-- STATE
+-- =========================================================
+
+local state = {
+    throw = false,
+    buy = false,
+    sell = false,
+    luck = false,
+    value = false,
+    afk = false,
 }
 
 local threads = {}
-local state = { throw = false, buy = false, sell = false, luck = false, value = false, afk = false }
+local connections = {}
 
--- ================== STRUKTUR GUI ==================
-local gui = Instance.new('ScreenGui')
-gui.Name = 'AliceHUBSplit'
+local throwCoin = coinList[1]
+local buyCoin = coinList[1]
+
+local destroyed = false
+local minimized = false
+
+-- =========================================================
+-- CONNECTION MANAGER
+-- =========================================================
+
+local function connect(signal, callback)
+    local connection = signal:Connect(callback)
+    table.insert(connections, connection)
+    return connection
+end
+
+local function disconnectAll()
+    for _, connection in ipairs(connections) do
+        if connection and connection.Connected then
+            connection:Disconnect()
+        end
+    end
+
+    table.clear(connections)
+end
+
+-- =========================================================
+-- THREAD MANAGER
+-- =========================================================
+
+local function stopThread(name)
+    local thread = threads[name]
+
+    if thread then
+        pcall(function()
+            task.cancel(thread)
+        end)
+
+        threads[name] = nil
+    end
+end
+
+local function stopAllThreads()
+    for name in pairs(threads) do
+        stopThread(name)
+    end
+end
+
+local function startLoop(name, callback)
+    stopThread(name)
+
+    threads[name] = task.spawn(function()
+        while not destroyed and state[name] do
+            local success, err = pcall(callback)
+
+            if not success then
+                warn("[AliceHUB] " .. name .. " error:", err)
+            end
+
+            task.wait(CONFIG.LoopDelay)
+        end
+
+        threads[name] = nil
+    end)
+end
+
+-- =========================================================
+-- DESTROY OLD GUI
+-- =========================================================
+
+local oldGui = playerGui:FindFirstChild("AliceHUBv2")
+
+if oldGui then
+    oldGui:Destroy()
+end
+
+-- =========================================================
+-- MAIN GUI
+-- =========================================================
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "AliceHUBv2"
 gui.IgnoreGuiInset = true
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild('PlayerGui')
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = playerGui
 
--- Panel Utama (Ganti Draggable ke false biar gak bentrok sama Header Drag)
-local panel = Instance.new('ScrollingFrame')
-panel.Size = UDim2.fromOffset(340, 400)
+-- =========================================================
+-- PANEL
+-- =========================================================
+
+local panel = Instance.new("ScrollingFrame")
+panel.Name = "MainPanel"
+panel.Size = UDim2.fromOffset(CONFIG.PanelWidth, CONFIG.PanelHeight)
 panel.AnchorPoint = Vector2.new(0.5, 1)
 panel.Position = UDim2.new(0.5, 0, 1, -15)
-panel.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+panel.BackgroundColor3 = CONFIG.Background
 panel.BorderSizePixel = 0
 panel.ScrollBarThickness = 4
 panel.AutomaticCanvasSize = Enum.AutomaticSize.Y
+panel.CanvasSize = UDim2.new(0, 0, 0, 0)
 panel.Active = true
-panel.Draggable = false -- DIMATIKAN, geser pake header aja
+panel.ScrollingEnabled = true
 panel.Parent = gui
 
-local corner = Instance.new('UICorner')
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = panel
+local panelCorner = Instance.new("UICorner")
+panelCorner.CornerRadius = UDim.new(0, 12)
+panelCorner.Parent = panel
 
-local padding = Instance.new('UIPadding')
+local padding = Instance.new("UIPadding")
 padding.PaddingTop = UDim.new(0, 12)
 padding.PaddingBottom = UDim.new(0, 12)
 padding.PaddingLeft = UDim.new(0, 12)
 padding.PaddingRight = UDim.new(0, 12)
 padding.Parent = panel
 
-local list = Instance.new('UIListLayout')
-list.Padding = UDim.new(0, 8)
-list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-list.SortOrder = Enum.SortOrder.LayoutOrder
-list.Parent = panel
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = panel
 
--- ================== HEADER ==================
-local header = Instance.new('Frame')
+-- =========================================================
+-- HEADER
+-- =========================================================
+
+local header = Instance.new("Frame")
+header.Name = "Header"
 header.Size = UDim2.new(1, -4, 0, 30)
 header.BackgroundTransparency = 1
 header.LayoutOrder = 0
+header.Active = true
 header.Parent = panel
 
-local title = Instance.new('TextLabel')
+local title = Instance.new("TextLabel")
+title.Name = "Title"
 title.BackgroundTransparency = 1
 title.Size = UDim2.new(1, -70, 1, 0)
-title.Text = 'AliceHUB Split'
-title.TextColor3 = Color3.fromRGB(235, 235, 245)
+title.Text = "AliceHUB v2"
+title.TextColor3 = CONFIG.Text
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamSemibold
 title.TextSize = 16
 title.Parent = header
 
--- Tombol Minimize & Close
-local minBtn = Instance.new('TextButton')
+-- =========================================================
+-- MINIMIZE
+-- =========================================================
+
+local minBtn = Instance.new("TextButton")
+minBtn.Name = "Minimize"
 minBtn.Size = UDim2.fromOffset(28, 28)
 minBtn.Position = UDim2.new(1, -60, 0, 0)
-minBtn.Text = '—'
+minBtn.Text = "—"
 minBtn.Font = Enum.Font.GothamBold
 minBtn.TextSize = 16
 minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 minBtn.TextColor3 = Color3.new(1, 1, 1)
+minBtn.BorderSizePixel = 0
+minBtn.AutoButtonColor = false
 minBtn.Parent = header
-local minCorner = Instance.new('UICorner'); minCorner.CornerRadius = UDim.new(0, 8); minCorner.Parent = minBtn
 
-local closeBtn = Instance.new('TextButton')
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 8)
+minCorner.Parent = minBtn
+
+-- =========================================================
+-- CLOSE
+-- =========================================================
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "Close"
 closeBtn.Size = UDim2.fromOffset(28, 28)
 closeBtn.Position = UDim2.new(1, -28, 0, 0)
-closeBtn.Text = 'X'
+closeBtn.Text = "X"
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 16
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.BorderSizePixel = 0
+closeBtn.AutoButtonColor = false
 closeBtn.Parent = header
-local closeCorner = Instance.new('UICorner'); closeCorner.CornerRadius = UDim.new(0, 8); closeCorner.Parent = closeBtn
 
--- ================== DRAG SYSTEM ==================
-local UIS = game:GetService('UserInputService')
-local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
-local function update(input)
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeBtn
+
+-- =========================================================
+-- DRAG SYSTEM
+-- =========================================================
+
+local dragging = false
+local dragStart
+local startPosition
+local dragInput
+
+local function updateDrag(input)
+    if not dragging then
+        return
+    end
+
     local delta = input.Position - dragStart
-    panel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+
+    panel.Position = UDim2.new(
+        startPosition.X.Scale,
+        startPosition.X.Offset + delta.X,
+        startPosition.Y.Scale,
+        startPosition.Y.Offset + delta.Y
+    )
 end
-header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true; dragStart = input.Position; startPos = panel.Position
-        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+
+connect(header.InputBegan, function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        dragging = true
+        dragStart = input.Position
+        startPosition = panel.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
-header.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-end)
-UIS.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then update(input) end
+
+connect(header.InputChanged, function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        dragInput = input
+    end
 end)
 
--- ================== LOGIKA MINIMIZE ==================
-local isMinimized = false
-local function toggleMinimize()
-    isMinimized = not isMinimized
-    if isMinimized then
-        for _, child in ipairs(panel:GetChildren()) do
-            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 1 then child.Visible = false end
+connect(UIS.InputChanged, function(input)
+    if input == dragInput then
+        updateDrag(input)
+    end
+end)
+
+-- =========================================================
+-- DROPDOWN REGISTRY
+-- =========================================================
+
+local dropdowns = {}
+
+local function closeAllDropdowns(except)
+    for dropdown in pairs(dropdowns) do
+        if dropdown ~= except then
+            dropdown:Close()
         end
-        panel.Size = UDim2.fromOffset(340, 55)
+    end
+end
+
+-- =========================================================
+-- DROPDOWN
+-- =========================================================
+
+local function createDropdownRow(labelText, options, callback)
+
+    local row = Instance.new("Frame")
+    row.Name = labelText:gsub("%s+", "")
+    row.Size = UDim2.new(1, 0, 0, 36)
+    row.BackgroundTransparency = 1
+    row.LayoutOrder = #panel:GetChildren() + 1
+    row.Parent = panel
+
+    local rowLayout = Instance.new("UIListLayout")
+    rowLayout.FillDirection = Enum.FillDirection.Horizontal
+    rowLayout.Padding = UDim.new(0, 8)
+    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    rowLayout.Parent = row
+
+    -- Label
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.4, 0, 1, 0)
+    label.Text = labelText
+    label.TextColor3 = CONFIG.SecondaryText
+    label.TextSize = 13
+    label.Font = Enum.Font.GothamSemibold
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = row
+
+    -- Button
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0.55, 0, 1, 0)
+    button.Text = "▼ " .. options[1]
+    button.TextSize = 12
+    button.Font = Enum.Font.Gotham
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.BackgroundColor3 = CONFIG.Secondary
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Parent = row
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = button
+
+    -- Dropdown
+    local dropdown = Instance.new("ScrollingFrame")
+    dropdown.Name = labelText .. "_Dropdown"
+    dropdown.BackgroundColor3 = CONFIG.DropdownBackground
+    dropdown.BorderSizePixel = 0
+    dropdown.ClipsDescendants = true
+    dropdown.ScrollBarThickness = 3
+    dropdown.Visible = false
+    dropdown.ZIndex = 100
+    dropdown.Parent = gui
+
+    local dropdownCorner = Instance.new("UICorner")
+    dropdownCorner.CornerRadius = UDim.new(0, 8)
+    dropdownCorner.Parent = dropdown
+
+    local dropdownLayout = Instance.new("UIListLayout")
+    dropdownLayout.Padding = UDim.new(0, 2)
+    dropdownLayout.Parent = dropdown
+
+    local selected = options[1]
+    local opened = false
+
+    local api = {}
+
+    function api:GetSelected()
+        return selected
+    end
+
+    function api:Close()
+        opened = false
+        dropdown.Visible = false
+    end
+
+    function api:Open()
+        closeAllDropdowns(api)
+
+        local absolutePosition = button.AbsolutePosition
+        local absoluteSize = button.AbsoluteSize
+
+        local height = math.min(
+            (#options * 30) + 4,
+            160
+        )
+
+        dropdown.Position = UDim2.fromOffset(
+            absolutePosition.X,
+            absolutePosition.Y + absoluteSize.Y
+        )
+
+        dropdown.Size = UDim2.fromOffset(
+            absoluteSize.X,
+            height
+        )
+
+        dropdown.CanvasSize = UDim2.fromOffset(
+            0,
+            (#options * 30) + 4
+        )
+
+        dropdown.Visible = true
+        opened = true
+    end
+
+    dropdowns[api] = true
+
+    -- Create options
+    for _, option in ipairs(options) do
+
+        local optionButton = Instance.new("TextButton")
+        optionButton.Size = UDim2.new(1, 0, 0, 28)
+        optionButton.Text = option
+        optionButton.TextSize = 12
+        optionButton.Font = Enum.Font.Gotham
+        optionButton.TextColor3 = Color3.new(1, 1, 1)
+        optionButton.BackgroundColor3 = Color3.fromRGB(50, 55, 70)
+        optionButton.BorderSizePixel = 0
+        optionButton.AutoButtonColor = false
+        optionButton.ZIndex = 101
+        optionButton.Parent = dropdown
+
+        local optionCorner = Instance.new("UICorner")
+        optionCorner.CornerRadius = UDim.new(0, 4)
+        optionCorner.Parent = optionButton
+
+        connect(optionButton.MouseButton1Click, function()
+
+            selected = option
+
+            button.Text = "▼ " .. option
+
+            api:Close()
+
+            if callback then
+                callback(option)
+            end
+        end)
+    end
+
+    connect(button.MouseButton1Click, function()
+
+        if opened then
+            api:Close()
+        else
+            api:Open()
+        end
+    end)
+
+    return api
+end
+
+-- =========================================================
+-- CLOSE DROPDOWNS WHEN CLICKING OUTSIDE
+-- =========================================================
+
+connect(UIS.InputBegan, function(input)
+
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+
+    local position = input.Position
+
+    for dropdownApi in pairs(dropdowns) do
+
+        -- Dropdown itself handles its own clicks.
+        -- Here we simply close open dropdowns when appropriate.
+        local dropdownObject
+
+        for _, object in ipairs(gui:GetChildren()) do
+            if object:IsA("ScrollingFrame")
+                and object.Name:find("_Dropdown") then
+
+                dropdownObject = object
+
+                if object.Visible then
+
+                    local p = object.AbsolutePosition
+                    local s = object.AbsoluteSize
+
+                    local inside =
+                        position.X >= p.X
+                        and position.X <= p.X + s.X
+                        and position.Y >= p.Y
+                        and position.Y <= p.Y + s.Y
+
+                    if not inside then
+                        dropdownApi:Close()
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- =========================================================
+-- TOGGLE
+-- =========================================================
+
+local toggleObjects = {}
+
+local function createToggleRow(labelText, callback)
+
+    local row = Instance.new("Frame")
+    row.Name = labelText:gsub("%s+", "")
+    row.Size = UDim2.new(1, 0, 0, 36)
+    row.BackgroundTransparency = 1
+    row.LayoutOrder = #panel:GetChildren() + 1
+    row.Parent = panel
+
+    local rowLayout = Instance.new("UIListLayout")
+    rowLayout.FillDirection = Enum.FillDirection.Horizontal
+    rowLayout.Padding = UDim.new(0, 8)
+    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    rowLayout.Parent = row
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.4, 0, 1, 0)
+    label.Text = labelText
+    label.TextColor3 = CONFIG.SecondaryText
+    label.TextSize = 13
+    label.Font = Enum.Font.GothamSemibold
+    label.BackgroundTransparency = 1
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = row
+
+    local button = Instance.new("ImageButton")
+    button.Size = UDim2.fromOffset(44, 24)
+    button.BackgroundColor3 = CONFIG.ToggleOff
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Parent = row
+
+    local bgCorner = Instance.new("UICorner")
+    bgCorner.CornerRadius = UDim.new(0, 12)
+    bgCorner.Parent = button
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.fromOffset(18, 18)
+    knob.Position = UDim2.new(0, 3, 0.5, -9)
+    knob.BackgroundColor3 = Color3.new(1, 1, 1)
+    knob.BorderSizePixel = 0
+    knob.Parent = button
+
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = knob
+
+    local enabled = false
+
+    local object = {}
+
+    function object:Set(value, triggerCallback)
+
+        enabled = value
+
+        if enabled then
+            button.BackgroundColor3 = CONFIG.ToggleOn
+            knob.Position = UDim2.new(1, -21, 0.5, -9)
+        else
+            button.BackgroundColor3 = CONFIG.ToggleOff
+            knob.Position = UDim2.new(0, 3, 0.5, -9)
+        end
+
+        if triggerCallback and callback then
+            callback(enabled)
+        end
+    end
+
+    function object:Get()
+        return enabled
+    end
+
+    toggleObjects[labelText] = object
+
+    connect(button.MouseButton1Click, function()
+
+        object:Set(not enabled, true)
+
+    end)
+
+    return object
+end
+
+-- =========================================================
+-- MINIMIZE
+-- =========================================================
+
+local function setMinimized(value)
+
+    minimized = value
+
+    for _, child in ipairs(panel:GetChildren()) do
+
+        if child:IsA("Frame") and child ~= header then
+            child.Visible = not minimized
+        end
+    end
+
+    if minimized then
+        panel.Size = UDim2.fromOffset(CONFIG.PanelWidth, 55)
         minBtn.Text = "+"
     else
-        for _, child in ipairs(panel:GetChildren()) do
-            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 1 then child.Visible = true end
-        end
-        panel.Size = UDim2.fromOffset(340, 400)
+        panel.Size = UDim2.fromOffset(
+            CONFIG.PanelWidth,
+            CONFIG.PanelHeight
+        )
+
         minBtn.Text = "—"
     end
 end
-minBtn.MouseButton1Click:Connect(toggleMinimize)
 
-closeBtn.MouseButton1Click:Connect(function()
-    for _, t in pairs(threads) do if t then task.cancel(t) end end
-    gui:Destroy()
+connect(minBtn.MouseButton1Click, function()
+    setMinimized(not minimized)
 end)
 
--- ================== FUNGSI BARIS & DROPDOWN (FIX BUG KAMU) ==================
-local orderIdx = 1
+-- =========================================================
+-- GAME LOGIC
+-- =========================================================
 
--- 1. Fungsi Dropdown (Fix Variabel & InputBegan)
-local function createDropdownRow(labelText, options, onSelect)
-    local row = Instance.new('Frame')
-    row.Size = UDim2.new(1, 0, 0, 36)
-    row.BackgroundTransparency = 1
-    row.LayoutOrder = orderIdx
-    orderIdx = orderIdx + 1
-    row.Parent = panel
+local function startThrow()
 
-    local rowLayout = Instance.new('UIListLayout')
-    rowLayout.FillDirection = Enum.FillDirection.Horizontal
-    rowLayout.Padding = UDim.new(0, 8)
-    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    rowLayout.Parent = row
+    state.throw = true
 
-    local lbl = Instance.new('TextLabel')
-    lbl.Size = UDim2.new(0.4, 0, 1, 0)
-    lbl.Text = labelText
-    lbl.TextColor3 = Color3.fromRGB(200, 200, 230)
-    lbl.TextSize = 13
-    lbl.Font = Enum.Font.GothamSemibold
-    lbl.BackgroundTransparency = 1
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.LayoutOrder = 1
-    lbl.Parent = row
+    startLoop("throw", function()
 
-    local btn = Instance.new('TextButton')
-    btn.Size = UDim2.new(0.55, 0, 1, 0)
-    btn.Text = "▼ " .. options[1]
-    btn.TextSize = 12
-    btn.Font = Enum.Font.Gotham
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.BackgroundColor3 = Color3.fromRGB(40, 45, 60)
-    btn.BorderSizePixel = 0
-    btn.AutoButtonColor = false
-    btn.LayoutOrder = 2
-    btn.Parent = row
-    local bCorner = Instance.new('UICorner'); bCorner.CornerRadius = UDim.new(0, 6); bCorner.Parent = btn
+        local throwParams = {
+            1.4278748995675,
+            Vector3.new(
+                -1158.4721679688,
+                0.72600001096725,
+                -176.51705932617
+            ),
+            throwCoin,
+            nil,
+            nil,
+            5
+        }
 
-    -- LIST DROPDOWN
-    local listFrame = Instance.new("ScrollingFrame")
-    listFrame.Size = UDim2.new(0, 185, 0, 0)
-    listFrame.BackgroundColor3 = Color3.fromRGB(25, 28, 35)
-    listFrame.BorderSizePixel = 0
-    listFrame.ClipsDescendants = true
-    listFrame.ScrollBarThickness = 3
-    listFrame.Visible = false
-    listFrame.ZIndex = 10
-    listFrame.Parent = gui
-    local lCorner = Instance.new('UICorner'); lCorner.CornerRadius = UDim.new(0, 8); lCorner.Parent = listFrame
-    local lList = Instance.new('UIListLayout'); lList.Padding = UDim.new(0, 2); lList.Parent = listFrame
+        events.throw:FireServer(
+            table.unpack(throwParams, 1, 6)
+        )
+    end)
+end
 
-    local selected = options[1]
-    local isOpen = false
-    local btnAbsPos, btnSize -- Dideklarasikan di sini agar bisa diakses semua function
+local function startBuy()
 
-    local function rebuildList()
-        for _, child in ipairs(listFrame:GetChildren()) do
-            if child:IsA("TextButton") then child:Destroy() end
-        end
-        local totalH = 0
-        for _, opt in ipairs(options) do
-            local oBtn = Instance.new("TextButton")
-            oBtn.Size = UDim2.new(1, 0, 0, 28)
-            oBtn.Text = opt
-            oBtn.TextSize = 12
-            oBtn.Font = Enum.Font.Gotham
-            oBtn.TextColor3 = Color3.new(1, 1, 1)
-            oBtn.BackgroundColor3 = Color3.fromRGB(50, 55, 70)
-            oBtn.BorderSizePixel = 0
-            oBtn.Parent = listFrame
-            local oCorner = Instance.new('UICorner'); oCorner.CornerRadius = UDim.new(0, 4); oCorner.Parent = oBtn
-            
-            oBtn.MouseButton1Click:Connect(function()
-                selected = opt
-                btn.Text = "▼ " .. opt
-                listFrame.Visible = false
-                isOpen = false
-                if onSelect then onSelect(opt) end
-            end)
-            totalH = totalH + 30
-        end
-        listFrame.CanvasSize = UDim2.new(0, 0, 0, totalH)
+    state.buy = true
+
+    startLoop("buy", function()
+        events.buy:FireServer(buyCoin)
+    end)
+end
+
+local function startSell()
+
+    state.sell = true
+
+    startLoop("sell", function()
+        events.sell:FireServer()
+    end)
+end
+
+local function startLuck()
+
+    state.luck = true
+
+    startLoop("luck", function()
+        events.upgrade:FireServer("Luck Multiplier")
+    end)
+end
+
+local function startValue()
+
+    state.value = true
+
+    startLoop("value", function()
+        events.upgrade:FireServer("Value Multiplier")
+    end)
+end
+
+-- =========================================================
+-- DROPDOWNS
+-- =========================================================
+
+local throwDropdown = createDropdownRow(
+    "Throw Coin",
+    coinList,
+    function(option)
+        throwCoin = option
     end
-    rebuildList()
+)
 
-    btn.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        if isOpen then
-            btnAbsPos = btn.AbsolutePosition
-            btnSize = btn.AbsoluteSize
-            listFrame.Position = UDim2.new(0, btnAbsPos.X, 0, btnAbsPos.Y + btnSize.Y)
-            listFrame.Size = UDim2.new(0, btnSize.X, 0, math.min(#options * 30 + 4, 140))
-            listFrame.Visible = true
+local buyDropdown = createDropdownRow(
+    "Buy Coin",
+    coinList,
+    function(option)
+        buyCoin = option
+    end
+)
+
+-- =========================================================
+-- TOGGLES
+-- =========================================================
+
+local throwToggle = createToggleRow(
+    "Auto Throw",
+    function(enabled)
+
+        state.throw = enabled
+
+        if enabled then
+            startThrow()
         else
-            listFrame.Visible = false
+            stopThread("throw")
         end
-    end)
+    end
+)
 
-    -- FIX BUG 1 & 2: Pakai UIS.InputBegan dan fix scope variabel posisi
-    UIS.InputBegan:Connect(function(input)
-        if not listFrame.Visible then return end
-        if input.UserInputType ~= Enum.UserInputType.Touch and input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        
-        local pos = input.Position
-        -- Cek apakah klik berada di area tombol utama
-        local inBtn = pos.X >= btnAbsPos.X and pos.X <= btnAbsPos.X + btnSize.X and pos.Y >= btnAbsPos.Y and pos.Y <= btnAbsPos.Y + btnSize.Y
-        
-        -- Cek apakah klik berada di area list dropdown
-        local listAbsPos = listFrame.AbsolutePosition
-        local listAbsSize = listFrame.AbsoluteSize
-        local inList = pos.X >= listAbsPos.X and pos.X <= listAbsPos.X + listAbsSize.X and pos.Y >= listAbsPos.Y and pos.Y <= listAbsPos.Y + listAbsSize.Y
-        
-        -- Jika klik di luar tombol dan luar list, tutup dropdown
-        if not inBtn and not inList then
-            listFrame.Visible = false
-            isOpen = false
+local buyToggle = createToggleRow(
+    "Auto Buy",
+    function(enabled)
+
+        state.buy = enabled
+
+        if enabled then
+            startBuy()
+        else
+            stopThread("buy")
         end
-    end)
+    end
+)
 
-    return { getSelected = function() return selected end }
+local sellToggle = createToggleRow(
+    "Auto Sell All",
+    function(enabled)
+
+        state.sell = enabled
+
+        if enabled then
+            startSell()
+        else
+            stopThread("sell")
+        end
+    end
+)
+
+local luckToggle = createToggleRow(
+    "Upgrade Luck",
+    function(enabled)
+
+        state.luck = enabled
+
+        if enabled then
+            startLuck()
+        else
+            stopThread("luck")
+        end
+    end
+)
+
+local valueToggle = createToggleRow(
+    "Upgrade Value",
+    function(enabled)
+
+        state.value = enabled
+
+        if enabled then
+            startValue()
+        else
+            stopThread("value")
+        end
+    end
+)
+
+local afkToggle = createToggleRow(
+    "AFK Safe",
+    function(enabled)
+
+        state.afk = enabled
+
+        pcall(function()
+            events.afk:FireServer(enabled)
+        end)
+    end
+)
+
+-- =========================================================
+-- RESPAWN HANDLING
+-- =========================================================
+
+connect(player.CharacterAdded, function()
+
+    -- Stop all active loops
+    stopAllThreads()
+
+    -- Reset state
+    state.throw = false
+    state.buy = false
+    state.sell = false
+    state.luck = false
+    state.value = false
+    state.afk = false
+
+    -- Reset UI toggles
+    throwToggle:Set(false, false)
+    buyToggle:Set(false, false)
+    sellToggle:Set(false, false)
+    luckToggle:Set(false, false)
+    valueToggle:Set(false, false)
+    afkToggle:Set(false, false)
+
+end)
+
+-- =========================================================
+-- CLOSE / CLEANUP
+-- =========================================================
+
+local function cleanup()
+
+    if destroyed then
+        return
+    end
+
+    destroyed = true
+
+    -- Stop loops
+    stopAllThreads()
+
+    -- Disconnect events
+    disconnectAll()
+
+    -- Clear dropdown registry
+    table.clear(dropdowns)
+
+    -- Destroy GUI
+    if gui then
+        gui:Destroy()
+    end
 end
 
--- 2. Fungsi Toggle (Sakelar ON/OFF)
-local function createToggleRow(labelText, onToggle)
-    local row = Instance.new('Frame')
-    row.Size = UDim2.new(1, 0, 0, 36)
-    row.BackgroundTransparency = 1
-    row.LayoutOrder = orderIdx
-    orderIdx = orderIdx + 1
-    row.Parent = panel
+connect(closeBtn.MouseButton1Click, cleanup)
 
-    local rowLayout = Instance.new('UIListLayout')
-    rowLayout.FillDirection = Enum.FillDirection.Horizontal
-    rowLayout.Padding = UDim.new(0, 8)
-    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    rowLayout.Parent = row
+-- =========================================================
+-- FINAL
+-- =========================================================
 
-    local lbl = Instance.new('TextLabel')
-    lbl.Size = UDim2.new(0.4, 0, 1, 0)
-    lbl.Text = labelText
-    lbl.TextColor3 = Color3.fromRGB(200, 200, 230)
-    lbl.TextSize = 13
-    lbl.Font = Enum.Font.GothamSemibold
-    lbl.BackgroundTransparency = 1
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.LayoutOrder = 1
-    lbl.Parent = row
-
-    local btn = Instance.new('ImageButton')
-    btn.Size = UDim2.new(0, 44, 0, 24)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 55, 65)
-    btn.BorderSizePixel = 0
-    btn.AutoButtonColor = false
-    btn.LayoutOrder = 2
-    btn.Parent = row
-    local bgCorner = Instance.new('UICorner'); bgCorner.CornerRadius = UDim.new(0, 12); bgCorner.Parent = btn
-
-    local knob = Instance.new('ImageLabel')
-    knob.Size = UDim2.new(0, 18, 0, 18)
-    knob.Position = UDim2.new(0, 3, 0.5, -9)
-    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    knob.BackgroundTransparency = 1
-    knob.Image = "rbxassetid://3926305904"
-    knob.Parent = btn
-
-    local state = false
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        if state then
-            btn.BackgroundColor3 = Color3.fromRGB(80, 200, 100)
-            knob.Position = UDim2.new(1, -21, 0.5, -9)
-        else
-            btn.BackgroundColor3 = Color3.fromRGB(50, 55, 65)
-            knob.Position = UDim2.new(0, 3, 0.5, -9)
-        end
-        onToggle(state, btn)
-    end)
-    return btn
-end
-
--- ================== FITUR GAME ==================
-local throwDropdown = createDropdownRow("Throw Coin", coinList, function(opt) throwParams[3] = opt end)
-local buyDropdown = createDropdownRow("Buy Coin", coinList)
-
-createToggleRow("Auto Throw", function(on)
-    state.throw = on
-    if on then
-        threads.throw = task.spawn(function()
-            while state.throw do
-                -- FIX BUG 3: Paksa kirim 6 argumen (termasuk nilai nil di tengah)
-                events.throw:FireServer(table.unpack(throwParams, 1, 6))
-                task.wait(0.5)
-            end
-        end)
-    elseif threads.throw then task.cancel(threads.throw); threads.throw = nil end
-end)
-
-createToggleRow("Auto Buy", function(on)
-    state.buy = on
-    if on then
-        threads.buy = task.spawn(function()
-            while state.buy do
-                events.buy:FireServer(buyDropdown.getSelected())
-                task.wait(0.5)
-            end
-        end)
-    elseif threads.buy then task.cancel(threads.buy); threads.buy = nil end
-end)
-
-createToggleRow("Auto Sell All", function(on)
-    state.sell = on
-    if on then
-        threads.sell = task.spawn(function()
-            while state.sell do
-                events.sell:FireServer()
-                task.wait(0.5)
-            end
-        end)
-    elseif threads.sell then task.cancel(threads.sell); threads.sell = nil end
-end)
-
-createToggleRow("Upgrade Luck", function(on)
-    state.luck = on
-    if on then
-        threads.luck = task.spawn(function()
-            while state.luck do
-                events.upgrade:FireServer("Luck Multiplier")
-                task.wait(0.5)
-            end
-        end)
-    elseif threads.luck then task.cancel(threads.luck); threads.luck = nil end
-end)
-
-createToggleRow("Upgrade Value", function(on)
-    state.value = on
-    if on then
-        threads.value = task.spawn(function()
-            while state.value do
-                events.upgrade:FireServer("Value Multiplier")
-                task.wait(0.5)
-            end
-        end)
-    elseif threads.value then task.cancel(threads.value); threads.value = nil end
-end)
-
-createToggleRow("AFK Safe", function(on)
-    state.afk = on
-    events.afk:FireServer(on)
-end)
-
--- ================== CLEANUP (FIX BUG RESPAM: HAPUS PERINTAH GUI:DESTROY) ==================
-player.CharacterAdded:Connect(function()
-    -- Hentikan semua thread kalau mati/respawn
-    for _, t in pairs(threads) do if t then task.cancel(t) end end
-    threads = {}
-    state = { throw = false, buy = false, sell = false, luck = false, value = false, afk = false }
-    -- PERBAIKAN: GUI TETAP ADA, ga usah di destroy total
-end)
-
-print("✅ AliceHUB (Fix total bug dropdown & unpack) berhasil dimuat!")
+print("✅ AliceHUB v2 berhasil dimuat!")
