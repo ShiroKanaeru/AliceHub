@@ -41,7 +41,7 @@ gui.IgnoreGuiInset = true
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild('PlayerGui')
 
--- Frame Utama
+-- Panel Utama (Ganti Draggable ke false biar gak bentrok sama Header Drag)
 local panel = Instance.new('ScrollingFrame')
 panel.Size = UDim2.fromOffset(340, 400)
 panel.AnchorPoint = Vector2.new(0.5, 1)
@@ -51,7 +51,7 @@ panel.BorderSizePixel = 0
 panel.ScrollBarThickness = 4
 panel.AutomaticCanvasSize = Enum.AutomaticSize.Y
 panel.Active = true
-panel.Draggable = true
+panel.Draggable = false -- DIMATIKAN, geser pake header aja
 panel.Parent = gui
 
 local corner = Instance.new('UICorner')
@@ -71,7 +71,7 @@ list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 list.SortOrder = Enum.SortOrder.LayoutOrder
 list.Parent = panel
 
--- ================== HEADER (DRAG, MINIMIZE, CLOSE) ==================
+-- ================== HEADER ==================
 local header = Instance.new('Frame')
 header.Size = UDim2.new(1, -4, 0, 30)
 header.BackgroundTransparency = 1
@@ -80,7 +80,7 @@ header.Parent = panel
 
 local title = Instance.new('TextLabel')
 title.BackgroundTransparency = 1
-title.Size = UDim2.new(1, -70, 1, 0) -- Dikasih ruang buat tombol kanan
+title.Size = UDim2.new(1, -70, 1, 0)
 title.Text = 'AliceHUB Split'
 title.TextColor3 = Color3.fromRGB(235, 235, 245)
 title.TextXAlignment = Enum.TextXAlignment.Left
@@ -88,7 +88,7 @@ title.Font = Enum.Font.GothamSemibold
 title.TextSize = 16
 title.Parent = header
 
--- Tombol Minimize
+-- Tombol Minimize & Close
 local minBtn = Instance.new('TextButton')
 minBtn.Size = UDim2.fromOffset(28, 28)
 minBtn.Position = UDim2.new(1, -60, 0, 0)
@@ -100,7 +100,6 @@ minBtn.TextColor3 = Color3.new(1, 1, 1)
 minBtn.Parent = header
 local minCorner = Instance.new('UICorner'); minCorner.CornerRadius = UDim.new(0, 8); minCorner.Parent = minBtn
 
--- Tombol Close (X)
 local closeBtn = Instance.new('TextButton')
 closeBtn.Size = UDim2.fromOffset(28, 28)
 closeBtn.Position = UDim2.new(1, -28, 0, 0)
@@ -112,14 +111,13 @@ closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.Parent = header
 local closeCorner = Instance.new('UICorner'); closeCorner.CornerRadius = UDim.new(0, 8); closeCorner.Parent = closeBtn
 
--- ================== SISTEM DRAG ==================
+-- ================== DRAG SYSTEM ==================
 local UIS = game:GetService('UserInputService')
 local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
 local function update(input)
     local delta = input.Position - dragStart
     panel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
-
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true; dragStart = input.Position; startPos = panel.Position
@@ -135,43 +133,33 @@ end)
 
 -- ================== LOGIKA MINIMIZE ==================
 local isMinimized = false
-
 local function toggleMinimize()
     isMinimized = not isMinimized
     if isMinimized then
-        -- Sembunyikan semua baris fitur di bawahnya
         for _, child in ipairs(panel:GetChildren()) do
-            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 1 then
-                child.Visible = false
-            end
+            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 1 then child.Visible = false end
         end
-        panel.Size = UDim2.fromOffset(340, 55) -- Ukuran kecil cuma buat header
+        panel.Size = UDim2.fromOffset(340, 55)
         minBtn.Text = "+"
     else
-        -- Tampilkan kembali semua baris fitur
         for _, child in ipairs(panel:GetChildren()) do
-            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 1 then
-                child.Visible = true
-            end
+            if child:IsA("Frame") and child.LayoutOrder and child.LayoutOrder >= 1 then child.Visible = true end
         end
-        panel.Size = UDim2.fromOffset(340, 400) -- Kembali ke ukuran semula
+        panel.Size = UDim2.fromOffset(340, 400)
         minBtn.Text = "—"
     end
 end
-
 minBtn.MouseButton1Click:Connect(toggleMinimize)
 
--- ================== CLOSE ==================
 closeBtn.MouseButton1Click:Connect(function()
     for _, t in pairs(threads) do if t then task.cancel(t) end end
     gui:Destroy()
 end)
 
-
--- ================== FUNGSI PEMBUAT ROW KIRI-KANAN ==================
+-- ================== FUNGSI BARIS & DROPDOWN (FIX BUG KAMU) ==================
 local orderIdx = 1
 
--- 1. Row Dropdown
+-- 1. Fungsi Dropdown (Fix Variabel & InputBegan)
 local function createDropdownRow(labelText, options, onSelect)
     local row = Instance.new('Frame')
     row.Size = UDim2.new(1, 0, 0, 36)
@@ -211,22 +199,22 @@ local function createDropdownRow(labelText, options, onSelect)
     btn.Parent = row
     local bCorner = Instance.new('UICorner'); bCorner.CornerRadius = UDim.new(0, 6); bCorner.Parent = btn
 
+    -- LIST DROPDOWN
     local listFrame = Instance.new("ScrollingFrame")
-    listFrame.Size = UDim2.new(0.55, 0, 0, 0)
-    listFrame.AnchorPoint = Vector2.new(0, 1)
-    listFrame.Position = UDim2.new(0.45, 0, 1, 5)
+    listFrame.Size = UDim2.new(0, 185, 0, 0)
     listFrame.BackgroundColor3 = Color3.fromRGB(25, 28, 35)
     listFrame.BorderSizePixel = 0
     listFrame.ClipsDescendants = true
     listFrame.ScrollBarThickness = 3
     listFrame.Visible = false
-    listFrame.ZIndex = 5
-    listFrame.Parent = row
+    listFrame.ZIndex = 10
+    listFrame.Parent = gui
     local lCorner = Instance.new('UICorner'); lCorner.CornerRadius = UDim.new(0, 8); lCorner.Parent = listFrame
     local lList = Instance.new('UIListLayout'); lList.Padding = UDim.new(0, 2); lList.Parent = listFrame
 
     local selected = options[1]
     local isOpen = false
+    local btnAbsPos, btnSize -- Dideklarasikan di sini agar bisa diakses semua function
 
     local function rebuildList()
         for _, child in ipairs(listFrame:GetChildren()) do
@@ -260,16 +248,42 @@ local function createDropdownRow(labelText, options, onSelect)
 
     btn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-        listFrame.Visible = isOpen
         if isOpen then
-            listFrame.Size = UDim2.new(0.55, 0, 0, math.min(#options * 30 + 4, 140))
+            btnAbsPos = btn.AbsolutePosition
+            btnSize = btn.AbsoluteSize
+            listFrame.Position = UDim2.new(0, btnAbsPos.X, 0, btnAbsPos.Y + btnSize.Y)
+            listFrame.Size = UDim2.new(0, btnSize.X, 0, math.min(#options * 30 + 4, 140))
+            listFrame.Visible = true
+        else
+            listFrame.Visible = false
+        end
+    end)
+
+    -- FIX BUG 1 & 2: Pakai UIS.InputBegan dan fix scope variabel posisi
+    UIS.InputBegan:Connect(function(input)
+        if not listFrame.Visible then return end
+        if input.UserInputType ~= Enum.UserInputType.Touch and input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        
+        local pos = input.Position
+        -- Cek apakah klik berada di area tombol utama
+        local inBtn = pos.X >= btnAbsPos.X and pos.X <= btnAbsPos.X + btnSize.X and pos.Y >= btnAbsPos.Y and pos.Y <= btnAbsPos.Y + btnSize.Y
+        
+        -- Cek apakah klik berada di area list dropdown
+        local listAbsPos = listFrame.AbsolutePosition
+        local listAbsSize = listFrame.AbsoluteSize
+        local inList = pos.X >= listAbsPos.X and pos.X <= listAbsPos.X + listAbsSize.X and pos.Y >= listAbsPos.Y and pos.Y <= listAbsPos.Y + listAbsSize.Y
+        
+        -- Jika klik di luar tombol dan luar list, tutup dropdown
+        if not inBtn and not inList then
+            listFrame.Visible = false
+            isOpen = false
         end
     end)
 
     return { getSelected = function() return selected end }
 end
 
--- 2. Row Toggle (Sakelar On/Off)
+-- 2. Fungsi Toggle (Sakelar ON/OFF)
 local function createToggleRow(labelText, onToggle)
     local row = Instance.new('Frame')
     row.Size = UDim2.new(1, 0, 0, 36)
@@ -328,8 +342,7 @@ local function createToggleRow(labelText, onToggle)
     return btn
 end
 
-
--- ================== BUAT FITUR FARMING ==================
+-- ================== FITUR GAME ==================
 local throwDropdown = createDropdownRow("Throw Coin", coinList, function(opt) throwParams[3] = opt end)
 local buyDropdown = createDropdownRow("Buy Coin", coinList)
 
@@ -338,7 +351,8 @@ createToggleRow("Auto Throw", function(on)
     if on then
         threads.throw = task.spawn(function()
             while state.throw do
-                events.throw:FireServer(unpack(throwParams))
+                -- FIX BUG 3: Paksa kirim 6 argumen (termasuk nilai nil di tengah)
+                events.throw:FireServer(table.unpack(throwParams, 1, 6))
                 task.wait(0.5)
             end
         end)
@@ -398,11 +412,13 @@ createToggleRow("AFK Safe", function(on)
     events.afk:FireServer(on)
 end)
 
--- ================== CLEANUP ==================
+-- ================== CLEANUP (FIX BUG RESPAM: HAPUS PERINTAH GUI:DESTROY) ==================
 player.CharacterAdded:Connect(function()
+    -- Hentikan semua thread kalau mati/respawn
     for _, t in pairs(threads) do if t then task.cancel(t) end end
     threads = {}
     state = { throw = false, buy = false, sell = false, luck = false, value = false, afk = false }
+    -- PERBAIKAN: GUI TETAP ADA, ga usah di destroy total
 end)
 
-print("✅ AliceHUB (Split + Minimize) berhasil dimuat!")
+print("✅ AliceHUB (Fix total bug dropdown & unpack) berhasil dimuat!")
