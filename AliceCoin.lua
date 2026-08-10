@@ -1,45 +1,49 @@
 --[[
-    ╔══════════════════════════════════════╗
-             AliceHUB v2
-        Clean UI / Stable Structure
-    ╚══════════════════════════════════════╝
+╔════════════════════════════════════════════╗
+              ALICEHUB v3
+        Mobile • Tab • Card UI
+╚════════════════════════════════════════════╝
 ]]
 
--- =========================================================
+--==================================================
 -- SERVICES
--- =========================================================
+--==================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- =========================================================
+--==================================================
 -- CONFIG
--- =========================================================
+--==================================================
 
 local CONFIG = {
-    PanelWidth = 340,
-    PanelHeight = 400,
+    Width = 360,
+    Height = 455,
 
-    Background = Color3.fromRGB(30, 32, 40),
-    Secondary = Color3.fromRGB(40, 45, 60),
-    DropdownBackground = Color3.fromRGB(25, 28, 35),
+    Background = Color3.fromRGB(24, 26, 33),
+    Card = Color3.fromRGB(31, 34, 43),
+    Card2 = Color3.fromRGB(37, 40, 51),
 
-    Text = Color3.fromRGB(235, 235, 245),
-    SecondaryText = Color3.fromRGB(200, 200, 230),
+    Button = Color3.fromRGB(44, 48, 61),
+    Dropdown = Color3.fromRGB(28, 31, 40),
 
-    ToggleOff = Color3.fromRGB(50, 55, 65),
-    ToggleOn = Color3.fromRGB(80, 200, 100),
+    Text = Color3.fromRGB(242, 242, 248),
+    SubText = Color3.fromRGB(157, 163, 178),
 
-    LoopDelay = 0.5,
+    Accent = Color3.fromRGB(105, 145, 255),
+    ToggleOn = Color3.fromRGB(80, 195, 105),
+    ToggleOff = Color3.fromRGB(58, 62, 74),
+
+    Delay = 0.5,
 }
 
--- =========================================================
--- COIN LIST
--- =========================================================
+--==================================================
+-- COINS
+--==================================================
 
 local coinList = {
     "Basic Coin",
@@ -81,426 +85,465 @@ local coinList = {
     "Phoenix Coin",
 }
 
--- =========================================================
+--==================================================
 -- REMOTES
--- =========================================================
+--==================================================
 
-local events = {
-    throw = ReplicatedStorage.Assets.Events.CoinLanded,
-    buy = ReplicatedStorage.Assets.Events.BuyCoin,
-    sell = ReplicatedStorage.Assets.Events.SellAll,
-    upgrade = ReplicatedStorage.Assets.Events.RequestUpgrade,
-    afk = ReplicatedStorage.Assets.Events.SetAFKSafe,
+local Events = {
+    Throw = ReplicatedStorage.Assets.Events.CoinLanded,
+    Buy = ReplicatedStorage.Assets.Events.BuyCoin,
+    Sell = ReplicatedStorage.Assets.Events.SellAll,
+    Upgrade = ReplicatedStorage.Assets.Events.RequestUpgrade,
+    AFK = ReplicatedStorage.Assets.Events.SetAFKSafe,
 }
 
--- =========================================================
+--==================================================
 -- STATE
--- =========================================================
+--==================================================
 
-local state = {
-    throw = false,
-    buy = false,
-    sell = false,
-    luck = false,
-    value = false,
-    afk = false,
+local State = {
+    Throw = false,
+    Buy = false,
+    Sell = false,
+    Luck = false,
+    Value = false,
+    AFK = false,
 }
 
-local threads = {}
-local connections = {}
+local Selected = {
+    Throw = coinList[1],
+    Buy = coinList[1],
+}
 
-local throwCoin = coinList[1]
-local buyCoin = coinList[1]
+local Threads = {}
+local Connections = {}
+local Toggles = {}
+local Tabs = {}
+local Dropdowns = {}
 
-local destroyed = false
-local minimized = false
+local Destroyed = false
+local Minimized = false
+local CurrentTab = "COIN"
 
--- =========================================================
+--==================================================
 -- CONNECTION MANAGER
--- =========================================================
+--==================================================
 
-local function connect(signal, callback)
-    local connection = signal:Connect(callback)
-    table.insert(connections, connection)
-    return connection
+local function Connect(signal, callback)
+    local c = signal:Connect(callback)
+    table.insert(Connections, c)
+    return c
 end
 
-local function disconnectAll()
-    for _, connection in ipairs(connections) do
-        if connection and connection.Connected then
-            connection:Disconnect()
+local function DisconnectAll()
+    for _, c in ipairs(Connections) do
+        if c and c.Connected then
+            c:Disconnect()
         end
     end
 
-    table.clear(connections)
+    table.clear(Connections)
 end
 
--- =========================================================
+--==================================================
 -- THREAD MANAGER
--- =========================================================
+--==================================================
 
-local function stopThread(name)
-    local thread = threads[name]
-
-    if thread then
+local function StopThread(name)
+    if Threads[name] then
         pcall(function()
-            task.cancel(thread)
+            task.cancel(Threads[name])
         end)
 
-        threads[name] = nil
+        Threads[name] = nil
     end
 end
 
-local function stopAllThreads()
-    for name in pairs(threads) do
-        stopThread(name)
+local function StopAllThreads()
+    for name in pairs(Threads) do
+        StopThread(name)
     end
 end
 
-local function startLoop(name, callback)
-    stopThread(name)
+local function StartLoop(name, callback)
+    StopThread(name)
 
-    threads[name] = task.spawn(function()
-        while not destroyed and state[name] do
-            local success, err = pcall(callback)
+    Threads[name] = task.spawn(function()
+        while not Destroyed and State[name] do
 
-            if not success then
-                warn("[AliceHUB] " .. name .. " error:", err)
+            local ok, err = pcall(callback)
+
+            if not ok then
+                warn("[AliceHUB] " .. name .. ":", err)
             end
 
-            task.wait(CONFIG.LoopDelay)
+            task.wait(CONFIG.Delay)
         end
 
-        threads[name] = nil
+        Threads[name] = nil
     end)
 end
 
--- =========================================================
--- DESTROY OLD GUI
--- =========================================================
+--==================================================
+-- REMOVE OLD GUI
+--==================================================
 
-local oldGui = playerGui:FindFirstChild("AliceHUBv2")
+local Old = PlayerGui:FindFirstChild("AliceHUBv3")
 
-if oldGui then
-    oldGui:Destroy()
+if Old then
+    Old:Destroy()
 end
 
--- =========================================================
--- MAIN GUI
--- =========================================================
+--==================================================
+-- SCREEN GUI
+--==================================================
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "AliceHUBv2"
-gui.IgnoreGuiInset = true
-gui.ResetOnSpawn = false
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = playerGui
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "AliceHUBv3"
+GUI.ResetOnSpawn = false
+GUI.IgnoreGuiInset = true
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.Parent = PlayerGui
 
--- =========================================================
--- PANEL
--- =========================================================
+--==================================================
+-- MAIN PANEL
+--==================================================
 
-local panel = Instance.new("ScrollingFrame")
-panel.Name = "MainPanel"
-panel.Size = UDim2.fromOffset(CONFIG.PanelWidth, CONFIG.PanelHeight)
-panel.AnchorPoint = Vector2.new(0.5, 1)
-panel.Position = UDim2.new(0.5, 0, 1, -15)
-panel.BackgroundColor3 = CONFIG.Background
-panel.BorderSizePixel = 0
-panel.ScrollBarThickness = 4
-panel.AutomaticCanvasSize = Enum.AutomaticSize.Y
-panel.CanvasSize = UDim2.new(0, 0, 0, 0)
-panel.Active = true
-panel.ScrollingEnabled = true
-panel.Parent = gui
+local Panel = Instance.new("Frame")
+Panel.Name = "Main"
+Panel.Size = UDim2.fromOffset(CONFIG.Width, CONFIG.Height)
+Panel.AnchorPoint = Vector2.new(0.5, 1)
+Panel.Position = UDim2.new(0.5, 0, 1, -15)
+Panel.BackgroundColor3 = CONFIG.Background
+Panel.BorderSizePixel = 0
+Panel.Active = true
+Panel.Parent = GUI
 
-local panelCorner = Instance.new("UICorner")
-panelCorner.CornerRadius = UDim.new(0, 12)
-panelCorner.Parent = panel
+local PanelCorner = Instance.new("UICorner")
+PanelCorner.CornerRadius = UDim.new(0, 14)
+PanelCorner.Parent = Panel
 
-local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 12)
-padding.PaddingBottom = UDim.new(0, 12)
-padding.PaddingLeft = UDim.new(0, 12)
-padding.PaddingRight = UDim.new(0, 12)
-padding.Parent = panel
+local PanelStroke = Instance.new("UIStroke")
+PanelStroke.Color = Color3.fromRGB(48, 52, 65)
+PanelStroke.Thickness = 1
+PanelStroke.Transparency = 0.25
+PanelStroke.Parent = Panel
 
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 8)
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = panel
-
--- =========================================================
+--==================================================
 -- HEADER
--- =========================================================
+--==================================================
 
-local header = Instance.new("Frame")
-header.Name = "Header"
-header.Size = UDim2.new(1, -4, 0, 30)
-header.BackgroundTransparency = 1
-header.LayoutOrder = 0
-header.Active = true
-header.Parent = panel
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, -20, 0, 46)
+Header.Position = UDim2.fromOffset(10, 8)
+Header.BackgroundTransparency = 1
+Header.Active = true
+Header.Parent = Panel
 
-local title = Instance.new("TextLabel")
-title.Name = "Title"
-title.BackgroundTransparency = 1
-title.Size = UDim2.new(1, -70, 1, 0)
-title.Text = "AliceHUB v2"
-title.TextColor3 = CONFIG.Text
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Font = Enum.Font.GothamSemibold
-title.TextSize = 16
-title.Parent = header
+local Logo = Instance.new("TextLabel")
+Logo.Size = UDim2.fromOffset(35, 35)
+Logo.Position = UDim2.fromOffset(0, 5)
+Logo.BackgroundColor3 = CONFIG.Accent
+Logo.Text = "A"
+Logo.TextColor3 = Color3.new(1, 1, 1)
+Logo.Font = Enum.Font.GothamBold
+Logo.TextSize = 18
+Logo.Parent = Header
 
--- =========================================================
--- MINIMIZE
--- =========================================================
+local LogoCorner = Instance.new("UICorner")
+LogoCorner.CornerRadius = UDim.new(0, 10)
+LogoCorner.Parent = Logo
 
-local minBtn = Instance.new("TextButton")
-minBtn.Name = "Minimize"
-minBtn.Size = UDim2.fromOffset(28, 28)
-minBtn.Position = UDim2.new(1, -60, 0, 0)
-minBtn.Text = "—"
-minBtn.Font = Enum.Font.GothamBold
-minBtn.TextSize = 16
-minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-minBtn.TextColor3 = Color3.new(1, 1, 1)
-minBtn.BorderSizePixel = 0
-minBtn.AutoButtonColor = false
-minBtn.Parent = header
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -125, 0, 22)
+Title.Position = UDim2.fromOffset(45, 4)
+Title.BackgroundTransparency = 1
+Title.Text = "AliceHUB"
+Title.TextColor3 = CONFIG.Text
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 17
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
 
-local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 8)
-minCorner.Parent = minBtn
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, -125, 0, 18)
+Subtitle.Position = UDim2.fromOffset(45, 24)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "Coin automation"
+Subtitle.TextColor3 = CONFIG.SubText
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.TextSize = 11
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+Subtitle.Parent = Header
 
--- =========================================================
--- CLOSE
--- =========================================================
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.fromOffset(30, 30)
+MinBtn.Position = UDim2.new(1, -65, 0, 5)
+MinBtn.BackgroundColor3 = CONFIG.Button
+MinBtn.Text = "—"
+MinBtn.TextColor3 = CONFIG.Text
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 16
+MinBtn.BorderSizePixel = 0
+MinBtn.Parent = Header
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Name = "Close"
-closeBtn.Size = UDim2.fromOffset(28, 28)
-closeBtn.Position = UDim2.new(1, -28, 0, 0)
-closeBtn.Text = "X"
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.BorderSizePixel = 0
-closeBtn.AutoButtonColor = false
-closeBtn.Parent = header
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 8)
+MinCorner.Parent = MinBtn
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeBtn
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.fromOffset(30, 30)
+CloseBtn.Position = UDim2.new(1, -30, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(190, 62, 68)
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 19
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Parent = Header
 
--- =========================================================
--- DRAG SYSTEM
--- =========================================================
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseBtn
 
-local dragging = false
-local dragStart
-local startPosition
-local dragInput
+--==================================================
+-- DRAG
+--==================================================
 
-local function updateDrag(input)
-    if not dragging then
-        return
-    end
+local Dragging = false
+local DragStart
+local StartPosition
+local DragInput
 
-    local delta = input.Position - dragStart
-
-    panel.Position = UDim2.new(
-        startPosition.X.Scale,
-        startPosition.X.Offset + delta.X,
-        startPosition.Y.Scale,
-        startPosition.Y.Offset + delta.Y
-    )
-end
-
-connect(header.InputBegan, function(input)
+Connect(Header.InputBegan, function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
 
-        dragging = true
-        dragStart = input.Position
-        startPosition = panel.Position
+        Dragging = true
+        DragStart = input.Position
+        StartPosition = Panel.Position
 
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+                Dragging = false
             end
         end)
     end
 end)
 
-connect(header.InputChanged, function(input)
+Connect(Header.InputChanged, function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement
         or input.UserInputType == Enum.UserInputType.Touch then
 
-        dragInput = input
+        DragInput = input
     end
 end)
 
-connect(UIS.InputChanged, function(input)
-    if input == dragInput then
-        updateDrag(input)
+Connect(UIS.InputChanged, function(input)
+    if Dragging and input == DragInput then
+
+        local Delta = input.Position - DragStart
+
+        Panel.Position = UDim2.new(
+            StartPosition.X.Scale,
+            StartPosition.X.Offset + Delta.X,
+            StartPosition.Y.Scale,
+            StartPosition.Y.Offset + Delta.Y
+        )
     end
 end)
 
--- =========================================================
--- DROPDOWN REGISTRY
--- =========================================================
+--==================================================
+-- TAB BAR
+--==================================================
 
-local dropdowns = {}
+local TabBar = Instance.new("Frame")
+TabBar.Size = UDim2.new(1, -20, 0, 38)
+TabBar.Position = UDim2.fromOffset(10, 60)
+TabBar.BackgroundColor3 = CONFIG.Card
+TabBar.BorderSizePixel = 0
+TabBar.Parent = Panel
 
-local function closeAllDropdowns(except)
-    for dropdown in pairs(dropdowns) do
-        if dropdown ~= except then
-            dropdown:Close()
+local TabCorner = Instance.new("UICorner")
+TabCorner.CornerRadius = UDim.new(0, 9)
+TabCorner.Parent = TabBar
+
+local TabLayout = Instance.new("UIListLayout")
+TabLayout.FillDirection = Enum.FillDirection.Horizontal
+TabLayout.Padding = UDim.new(0, 4)
+TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+TabLayout.Parent = TabBar
+
+--==================================================
+-- CONTENT
+--==================================================
+
+local Content = Instance.new("Frame")
+Content.Name = "Content"
+Content.Size = UDim2.new(1, -20, 1, -145)
+Content.Position = UDim2.fromOffset(10, 108)
+Content.BackgroundTransparency = 1
+Content.Parent = Panel
+
+--==================================================
+-- STATUS
+--==================================================
+
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -20, 0, 22)
+Status.Position = UDim2.new(0, 10, 1, -30)
+Status.BackgroundTransparency = 1
+Status.Text = "● 0 features active"
+Status.TextColor3 = CONFIG.SubText
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 11
+Status.TextXAlignment = Enum.TextXAlignment.Left
+Status.Parent = Panel
+
+local function UpdateStatus()
+    local count = 0
+
+    for _, enabled in pairs(State) do
+        if enabled then
+            count += 1
         end
+    end
+
+    Status.Text = "● " .. count .. " feature" .. (count == 1 and "" or "s") .. " active"
+
+    if count > 0 then
+        Status.TextColor3 = CONFIG.ToggleOn
+    else
+        Status.TextColor3 = CONFIG.SubText
     end
 end
 
--- =========================================================
+--==================================================
+-- CARD
+--==================================================
+
+local function CreateCard(title, height)
+
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, 0, 0, height)
+    Card.BackgroundColor3 = CONFIG.Card
+    Card.BorderSizePixel = 0
+    Card.Parent = Content
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 11)
+    Corner.Parent = Card
+
+    local CardTitle = Instance.new("TextLabel")
+    CardTitle.Size = UDim2.new(1, -24, 0, 22)
+    CardTitle.Position = UDim2.fromOffset(12, 8)
+    CardTitle.BackgroundTransparency = 1
+    CardTitle.Text = title
+    CardTitle.TextColor3 = CONFIG.Text
+    CardTitle.Font = Enum.Font.GothamSemibold
+    CardTitle.TextSize = 12
+    CardTitle.TextXAlignment = Enum.TextXAlignment.Left
+    CardTitle.Parent = Card
+
+    return Card
+end
+
+--==================================================
 -- DROPDOWN
--- =========================================================
+--==================================================
 
-local function createDropdownRow(labelText, options, callback)
+local function CreateDropdown(parent, y, options, default, callback)
 
-    local row = Instance.new("Frame")
-    row.Name = labelText:gsub("%s+", "")
-    row.Size = UDim2.new(1, 0, 0, 36)
-    row.BackgroundTransparency = 1
-    row.LayoutOrder = #panel:GetChildren() + 1
-    row.Parent = panel
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -24, 0, 34)
+    Button.Position = UDim2.fromOffset(12, y)
+    Button.BackgroundColor3 = CONFIG.Button
+    Button.BorderSizePixel = 0
+    Button.Text = "▼  " .. default
+    Button.TextColor3 = CONFIG.Text
+    Button.Font = Enum.Font.Gotham
+    Button.TextSize = 12
+    Button.TextXAlignment = Enum.TextXAlignment.Left
+    Button.Parent = parent
 
-    local rowLayout = Instance.new("UIListLayout")
-    rowLayout.FillDirection = Enum.FillDirection.Horizontal
-    rowLayout.Padding = UDim.new(0, 8)
-    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    rowLayout.Parent = row
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 7)
+    Corner.Parent = Button
 
-    -- Label
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 1, 0)
-    label.Text = labelText
-    label.TextColor3 = CONFIG.SecondaryText
-    label.TextSize = 13
-    label.Font = Enum.Font.GothamSemibold
-    label.BackgroundTransparency = 1
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = row
+    local SelectedValue = default
+    local Open = false
 
-    -- Button
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.55, 0, 1, 0)
-    button.Text = "▼ " .. options[1]
-    button.TextSize = 12
-    button.Font = Enum.Font.Gotham
-    button.TextColor3 = Color3.new(1, 1, 1)
-    button.BackgroundColor3 = CONFIG.Secondary
-    button.BorderSizePixel = 0
-    button.AutoButtonColor = false
-    button.Parent = row
+    local List = Instance.new("ScrollingFrame")
+    List.Size = UDim2.fromOffset(1, 1)
+    List.BackgroundColor3 = CONFIG.Dropdown
+    List.BorderSizePixel = 0
+    List.Visible = false
+    List.ZIndex = 100
+    List.ScrollBarThickness = 3
+    List.Parent = GUI
 
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
-    buttonCorner.Parent = button
+    local ListCorner = Instance.new("UICorner")
+    ListCorner.CornerRadius = UDim.new(0, 8)
+    ListCorner.Parent = List
 
-    -- Dropdown
-    local dropdown = Instance.new("ScrollingFrame")
-    dropdown.Name = labelText .. "_Dropdown"
-    dropdown.BackgroundColor3 = CONFIG.DropdownBackground
-    dropdown.BorderSizePixel = 0
-    dropdown.ClipsDescendants = true
-    dropdown.ScrollBarThickness = 3
-    dropdown.Visible = false
-    dropdown.ZIndex = 100
-    dropdown.Parent = gui
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.Padding = UDim.new(0, 2)
+    ListLayout.Parent = List
 
-    local dropdownCorner = Instance.new("UICorner")
-    dropdownCorner.CornerRadius = UDim.new(0, 8)
-    dropdownCorner.Parent = dropdown
-
-    local dropdownLayout = Instance.new("UIListLayout")
-    dropdownLayout.Padding = UDim.new(0, 2)
-    dropdownLayout.Parent = dropdown
-
-    local selected = options[1]
-    local opened = false
-
-    local api = {}
-
-    function api:GetSelected()
-        return selected
+    local function Close()
+        Open = false
+        List.Visible = false
     end
 
-    function api:Close()
-        opened = false
-        dropdown.Visible = false
-    end
+    local function OpenList()
+        for _, d in pairs(Dropdowns) do
+            d()
+        end
 
-    function api:Open()
-        closeAllDropdowns(api)
+        local pos = Button.AbsolutePosition
+        local size = Button.AbsoluteSize
 
-        local absolutePosition = button.AbsolutePosition
-        local absoluteSize = button.AbsoluteSize
-
-        local height = math.min(
-            (#options * 30) + 4,
-            160
+        List.Position = UDim2.fromOffset(
+            pos.X,
+            pos.Y + size.Y + 3
         )
 
-        dropdown.Position = UDim2.fromOffset(
-            absolutePosition.X,
-            absolutePosition.Y + absoluteSize.Y
+        List.Size = UDim2.fromOffset(
+            size.X,
+            math.min(#options * 29 + 4, 155)
         )
 
-        dropdown.Size = UDim2.fromOffset(
-            absoluteSize.X,
-            height
-        )
-
-        dropdown.CanvasSize = UDim2.fromOffset(
+        List.CanvasSize = UDim2.fromOffset(
             0,
-            (#options * 30) + 4
+            #options * 29 + 4
         )
 
-        dropdown.Visible = true
-        opened = true
+        List.Visible = true
+        Open = true
     end
 
-    dropdowns[api] = true
+    table.insert(Dropdowns, Close)
 
-    -- Create options
     for _, option in ipairs(options) do
 
-        local optionButton = Instance.new("TextButton")
-        optionButton.Size = UDim2.new(1, 0, 0, 28)
-        optionButton.Text = option
-        optionButton.TextSize = 12
-        optionButton.Font = Enum.Font.Gotham
-        optionButton.TextColor3 = Color3.new(1, 1, 1)
-        optionButton.BackgroundColor3 = Color3.fromRGB(50, 55, 70)
-        optionButton.BorderSizePixel = 0
-        optionButton.AutoButtonColor = false
-        optionButton.ZIndex = 101
-        optionButton.Parent = dropdown
+        local Option = Instance.new("TextButton")
+        Option.Size = UDim2.new(1, 0, 0, 27)
+        Option.BackgroundColor3 = CONFIG.Button
+        Option.BorderSizePixel = 0
+        Option.Text = option
+        Option.TextColor3 = CONFIG.Text
+        Option.Font = Enum.Font.Gotham
+        Option.TextSize = 11
+        Option.ZIndex = 101
+        Option.Parent = List
 
-        local optionCorner = Instance.new("UICorner")
-        optionCorner.CornerRadius = UDim.new(0, 4)
-        optionCorner.Parent = optionButton
+        Connect(Option.MouseButton1Click, function()
 
-        connect(optionButton.MouseButton1Click, function()
+            SelectedValue = option
+            Button.Text = "▼  " .. option
 
-            selected = option
-
-            button.Text = "▼ " .. option
-
-            api:Close()
+            Close()
 
             if callback then
                 callback(option)
@@ -508,413 +551,434 @@ local function createDropdownRow(labelText, options, callback)
         end)
     end
 
-    connect(button.MouseButton1Click, function()
+    Connect(Button.MouseButton1Click, function()
 
-        if opened then
-            api:Close()
+        if Open then
+            Close()
         else
-            api:Open()
+            OpenList()
         end
     end)
 
-    return api
+    return function()
+        return SelectedValue
+    end
 end
 
--- =========================================================
--- CLOSE DROPDOWNS WHEN CLICKING OUTSIDE
--- =========================================================
-
-connect(UIS.InputBegan, function(input)
-
-    if input.UserInputType ~= Enum.UserInputType.MouseButton1
-        and input.UserInputType ~= Enum.UserInputType.Touch then
-        return
-    end
-
-    local position = input.Position
-
-    for dropdownApi in pairs(dropdowns) do
-
-        -- Dropdown itself handles its own clicks.
-        -- Here we simply close open dropdowns when appropriate.
-        local dropdownObject
-
-        for _, object in ipairs(gui:GetChildren()) do
-            if object:IsA("ScrollingFrame")
-                and object.Name:find("_Dropdown") then
-
-                dropdownObject = object
-
-                if object.Visible then
-
-                    local p = object.AbsolutePosition
-                    local s = object.AbsoluteSize
-
-                    local inside =
-                        position.X >= p.X
-                        and position.X <= p.X + s.X
-                        and position.Y >= p.Y
-                        and position.Y <= p.Y + s.Y
-
-                    if not inside then
-                        dropdownApi:Close()
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- =========================================================
+--==================================================
 -- TOGGLE
--- =========================================================
+--==================================================
 
-local toggleObjects = {}
+local function CreateToggle(parent, y, title, description, key, callback)
 
-local function createToggleRow(labelText, callback)
+    local Row = Instance.new("Frame")
+    Row.Size = UDim2.new(1, -24, 0, 45)
+    Row.Position = UDim2.fromOffset(12, y)
+    Row.BackgroundTransparency = 1
+    Row.Parent = parent
 
-    local row = Instance.new("Frame")
-    row.Name = labelText:gsub("%s+", "")
-    row.Size = UDim2.new(1, 0, 0, 36)
-    row.BackgroundTransparency = 1
-    row.LayoutOrder = #panel:GetChildren() + 1
-    row.Parent = panel
+    local Name = Instance.new("TextLabel")
+    Name.Size = UDim2.new(1, -65, 0, 20)
+    Name.Position = UDim2.fromOffset(0, 0)
+    Name.BackgroundTransparency = 1
+    Name.Text = title
+    Name.TextColor3 = CONFIG.Text
+    Name.Font = Enum.Font.GothamSemibold
+    Name.TextSize = 12
+    Name.TextXAlignment = Enum.TextXAlignment.Left
+    Name.Parent = Row
 
-    local rowLayout = Instance.new("UIListLayout")
-    rowLayout.FillDirection = Enum.FillDirection.Horizontal
-    rowLayout.Padding = UDim.new(0, 8)
-    rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    rowLayout.Parent = row
+    local Desc = Instance.new("TextLabel")
+    Desc.Size = UDim2.new(1, -65, 0, 17)
+    Desc.Position = UDim2.fromOffset(0, 19)
+    Desc.BackgroundTransparency = 1
+    Desc.Text = description
+    Desc.TextColor3 = CONFIG.SubText
+    Desc.Font = Enum.Font.Gotham
+    Desc.TextSize = 9
+    Desc.TextXAlignment = Enum.TextXAlignment.Left
+    Desc.Parent = Row
 
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 1, 0)
-    label.Text = labelText
-    label.TextColor3 = CONFIG.SecondaryText
-    label.TextSize = 13
-    label.Font = Enum.Font.GothamSemibold
-    label.BackgroundTransparency = 1
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = row
+    local Toggle = Instance.new("TextButton")
+    Toggle.Size = UDim2.fromOffset(45, 24)
+    Toggle.Position = UDim2.new(1, -45, 0, 8)
+    Toggle.BackgroundColor3 = CONFIG.ToggleOff
+    Toggle.Text = ""
+    Toggle.BorderSizePixel = 0
+    Toggle.AutoButtonColor = false
+    Toggle.Parent = Row
 
-    local button = Instance.new("ImageButton")
-    button.Size = UDim2.fromOffset(44, 24)
-    button.BackgroundColor3 = CONFIG.ToggleOff
-    button.BorderSizePixel = 0
-    button.AutoButtonColor = false
-    button.Parent = row
+    local ToggleCorner = Instance.new("UICorner")
+    ToggleCorner.CornerRadius = UDim.new(1, 0)
+    ToggleCorner.Parent = Toggle
 
-    local bgCorner = Instance.new("UICorner")
-    bgCorner.CornerRadius = UDim.new(0, 12)
-    bgCorner.Parent = button
+    local Knob = Instance.new("Frame")
+    Knob.Size = UDim2.fromOffset(18, 18)
+    Knob.Position = UDim2.fromOffset(3, 3)
+    Knob.BackgroundColor3 = Color3.new(1, 1, 1)
+    Knob.BorderSizePixel = 0
+    Knob.Parent = Toggle
 
-    local knob = Instance.new("Frame")
-    knob.Size = UDim2.fromOffset(18, 18)
-    knob.Position = UDim2.new(0, 3, 0.5, -9)
-    knob.BackgroundColor3 = Color3.new(1, 1, 1)
-    knob.BorderSizePixel = 0
-    knob.Parent = button
-
-    local knobCorner = Instance.new("UICorner")
-    knobCorner.CornerRadius = UDim.new(1, 0)
-    knobCorner.Parent = knob
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
 
     local enabled = false
 
-    local object = {}
-
-    function object:Set(value, triggerCallback)
+    local function Set(value, trigger)
 
         enabled = value
+        State[key] = value
 
         if enabled then
-            button.BackgroundColor3 = CONFIG.ToggleOn
-            knob.Position = UDim2.new(1, -21, 0.5, -9)
+            Toggle.BackgroundColor3 = CONFIG.ToggleOn
+            Knob.Position = UDim2.new(1, -21, 0, 3)
         else
-            button.BackgroundColor3 = CONFIG.ToggleOff
-            knob.Position = UDim2.new(0, 3, 0.5, -9)
+            Toggle.BackgroundColor3 = CONFIG.ToggleOff
+            Knob.Position = UDim2.fromOffset(3, 3)
         end
 
-        if triggerCallback and callback then
+        UpdateStatus()
+
+        if trigger and callback then
             callback(enabled)
         end
     end
 
-    function object:Get()
-        return enabled
-    end
+    Toggles[key] = {
+        Set = Set,
+        Get = function()
+            return enabled
+        end,
+    }
 
-    toggleObjects[labelText] = object
-
-    connect(button.MouseButton1Click, function()
-
-        object:Set(not enabled, true)
-
+    Connect(Toggle.MouseButton1Click, function()
+        Set(not enabled, true)
     end)
 
-    return object
+    return Toggles[key]
 end
 
--- =========================================================
--- MINIMIZE
--- =========================================================
+--==================================================
+-- TAB CREATION
+--==================================================
 
-local function setMinimized(value)
+local function CreateTab(name)
 
-    minimized = value
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.fromOffset(105, 30)
+    Button.BackgroundColor3 = CONFIG.Button
+    Button.Text = name
+    Button.TextColor3 = CONFIG.SubText
+    Button.Font = Enum.Font.GothamSemibold
+    Button.TextSize = 10
+    Button.BorderSizePixel = 0
+    Button.Parent = TabBar
 
-    for _, child in ipairs(panel:GetChildren()) do
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 7)
+    Corner.Parent = Button
 
-        if child:IsA("Frame") and child ~= header then
-            child.Visible = not minimized
+    Tabs[name] = Button
+
+    Connect(Button.MouseButton1Click, function()
+
+        CurrentTab = name
+
+        for tabName, tabButton in pairs(Tabs) do
+
+            if tabName == CurrentTab then
+                tabButton.BackgroundColor3 = CONFIG.Accent
+                tabButton.TextColor3 = Color3.new(1, 1, 1)
+            else
+                tabButton.BackgroundColor3 = CONFIG.Button
+                tabButton.TextColor3 = CONFIG.SubText
+            end
         end
-    end
 
-    if minimized then
-        panel.Size = UDim2.fromOffset(CONFIG.PanelWidth, 55)
-        minBtn.Text = "+"
-    else
-        panel.Size = UDim2.fromOffset(
-            CONFIG.PanelWidth,
-            CONFIG.PanelHeight
-        )
-
-        minBtn.Text = "—"
-    end
-end
-
-connect(minBtn.MouseButton1Click, function()
-    setMinimized(not minimized)
-end)
-
--- =========================================================
--- GAME LOGIC
--- =========================================================
-
-local function startThrow()
-
-    state.throw = true
-
-    startLoop("throw", function()
-
-        local throwParams = {
-            1.4278748995675,
-            Vector3.new(
-                -1158.4721679688,
-                0.72600001096725,
-                -176.51705932617
-            ),
-            throwCoin,
-            nil,
-            nil,
-            5
-        }
-
-        events.throw:FireServer(
-            table.unpack(throwParams, 1, 6)
-        )
+        for _, child in ipairs(Content:GetChildren()) do
+            child.Visible = child.Name == name
+        end
     end)
+
+    return Button
 end
 
-local function startBuy()
+CreateTab("COIN")
+CreateTab("UPGRADE")
+CreateTab("SYSTEM")
 
-    state.buy = true
+--==================================================
+-- COIN TAB
+--==================================================
 
-    startLoop("buy", function()
-        events.buy:FireServer(buyCoin)
-    end)
-end
+local CoinTab = Instance.new("Frame")
+CoinTab.Name = "COIN"
+CoinTab.Size = UDim2.new(1, 0, 1, 0)
+CoinTab.BackgroundTransparency = 1
+CoinTab.Parent = Content
 
-local function startSell()
+local CoinLayout = Instance.new("UIListLayout")
+CoinLayout.Padding = UDim.new(0, 8)
+CoinLayout.Parent = CoinTab
 
-    state.sell = true
+local ThrowCard = CreateCard("THROW COIN", 125)
+ThrowCard.Parent = CoinTab
 
-    startLoop("sell", function()
-        events.sell:FireServer()
-    end)
-end
-
-local function startLuck()
-
-    state.luck = true
-
-    startLoop("luck", function()
-        events.upgrade:FireServer("Luck Multiplier")
-    end)
-end
-
-local function startValue()
-
-    state.value = true
-
-    startLoop("value", function()
-        events.upgrade:FireServer("Value Multiplier")
-    end)
-end
-
--- =========================================================
--- DROPDOWNS
--- =========================================================
-
-local throwDropdown = createDropdownRow(
-    "Throw Coin",
+CreateDropdown(
+    ThrowCard,
+    35,
     coinList,
+    Selected.Throw,
     function(option)
-        throwCoin = option
+        Selected.Throw = option
     end
 )
 
-local buyDropdown = createDropdownRow(
-    "Buy Coin",
-    coinList,
-    function(option)
-        buyCoin = option
-    end
-)
-
--- =========================================================
--- TOGGLES
--- =========================================================
-
-local throwToggle = createToggleRow(
+CreateToggle(
+    ThrowCard,
+    76,
     "Auto Throw",
+    "Automatically throw selected coin",
+    "Throw",
     function(enabled)
-
-        state.throw = enabled
-
         if enabled then
-            startThrow()
+            StartLoop("Throw", function()
+
+                local params = {
+                    1.4278748995675,
+                    Vector3.new(
+                        -1158.4721679688,
+                        0.72600001096725,
+                        -176.51705932617
+                    ),
+                    Selected.Throw,
+                    nil,
+                    nil,
+                    5
+                }
+
+                Events.Throw:FireServer(
+                    table.unpack(params, 1, 6)
+                )
+            end)
         else
-            stopThread("throw")
+            StopThread("Throw")
         end
     end
 )
 
-local buyToggle = createToggleRow(
+local BuyCard = CreateCard("BUY & SELL", 160)
+BuyCard.Parent = CoinTab
+
+CreateDropdown(
+    BuyCard,
+    35,
+    coinList,
+    Selected.Buy,
+    function(option)
+        Selected.Buy = option
+    end
+)
+
+CreateToggle(
+    BuyCard,
+    76,
     "Auto Buy",
+    "Automatically buy selected coin",
+    "Buy",
     function(enabled)
-
-        state.buy = enabled
-
         if enabled then
-            startBuy()
+            StartLoop("Buy", function()
+                Events.Buy:FireServer(Selected.Buy)
+            end)
         else
-            stopThread("buy")
+            StopThread("Buy")
         end
     end
 )
 
-local sellToggle = createToggleRow(
+CreateToggle(
+    BuyCard,
+    121,
     "Auto Sell All",
+    "Automatically sell all coins",
+    "Sell",
     function(enabled)
-
-        state.sell = enabled
-
         if enabled then
-            startSell()
+            StartLoop("Sell", function()
+                Events.Sell:FireServer()
+            end)
         else
-            stopThread("sell")
+            StopThread("Sell")
         end
     end
 )
 
-local luckToggle = createToggleRow(
+--==================================================
+-- UPGRADE TAB
+--==================================================
+
+local UpgradeTab = Instance.new("Frame")
+UpgradeTab.Name = "UPGRADE"
+UpgradeTab.Size = UDim2.new(1, 0, 1, 0)
+UpgradeTab.BackgroundTransparency = 1
+UpgradeTab.Visible = false
+UpgradeTab.Parent = Content
+
+local UpgradeLayout = Instance.new("UIListLayout")
+UpgradeLayout.Padding = UDim.new(0, 8)
+UpgradeLayout.Parent = UpgradeTab
+
+local UpgradeCard = CreateCard("UPGRADES", 150)
+UpgradeCard.Parent = UpgradeTab
+
+CreateToggle(
+    UpgradeCard,
+    38,
     "Upgrade Luck",
+    "Automatically request Luck upgrade",
+    "Luck",
     function(enabled)
-
-        state.luck = enabled
-
         if enabled then
-            startLuck()
+            StartLoop("Luck", function()
+                Events.Upgrade:FireServer("Luck Multiplier")
+            end)
         else
-            stopThread("luck")
+            StopThread("Luck")
         end
     end
 )
 
-local valueToggle = createToggleRow(
+CreateToggle(
+    UpgradeCard,
+    83,
     "Upgrade Value",
+    "Automatically request Value upgrade",
+    "Value",
     function(enabled)
-
-        state.value = enabled
-
         if enabled then
-            startValue()
+            StartLoop("Value", function()
+                Events.Upgrade:FireServer("Value Multiplier")
+            end)
         else
-            stopThread("value")
+            StopThread("Value")
         end
     end
 )
 
-local afkToggle = createToggleRow(
+--==================================================
+-- SYSTEM TAB
+--==================================================
+
+local SystemTab = Instance.new("Frame")
+SystemTab.Name = "SYSTEM"
+SystemTab.Size = UDim2.new(1, 0, 1, 0)
+SystemTab.BackgroundTransparency = 1
+SystemTab.Visible = false
+SystemTab.Parent = Content
+
+local SystemLayout = Instance.new("UIListLayout")
+SystemLayout.Padding = UDim.new(0, 8)
+SystemLayout.Parent = SystemTab
+
+local SystemCard = CreateCard("SYSTEM", 105)
+SystemCard.Parent = SystemTab
+
+CreateToggle(
+    SystemCard,
+    38,
     "AFK Safe",
+    "Enable AFK safe mode",
+    "AFK",
     function(enabled)
-
-        state.afk = enabled
-
         pcall(function()
-            events.afk:FireServer(enabled)
+            Events.AFK:FireServer(enabled)
         end)
     end
 )
 
--- =========================================================
--- RESPAWN HANDLING
--- =========================================================
+--==================================================
+-- INITIAL TAB
+--==================================================
 
-connect(player.CharacterAdded, function()
+Tabs.COIN.BackgroundColor3 = CONFIG.Accent
+Tabs.COIN.TextColor3 = Color3.new(1, 1, 1)
 
-    -- Stop all active loops
-    stopAllThreads()
+--==================================================
+-- MINIMIZE
+--==================================================
 
-    -- Reset state
-    state.throw = false
-    state.buy = false
-    state.sell = false
-    state.luck = false
-    state.value = false
-    state.afk = false
+local function SetMinimized(value)
 
-    -- Reset UI toggles
-    throwToggle:Set(false, false)
-    buyToggle:Set(false, false)
-    sellToggle:Set(false, false)
-    luckToggle:Set(false, false)
-    valueToggle:Set(false, false)
-    afkToggle:Set(false, false)
+    Minimized = value
 
-end)
+    TabBar.Visible = not value
+    Content.Visible = not value
+    Status.Visible = not value
 
--- =========================================================
--- CLOSE / CLEANUP
--- =========================================================
-
-local function cleanup()
-
-    if destroyed then
-        return
-    end
-
-    destroyed = true
-
-    -- Stop loops
-    stopAllThreads()
-
-    -- Disconnect events
-    disconnectAll()
-
-    -- Clear dropdown registry
-    table.clear(dropdowns)
-
-    -- Destroy GUI
-    if gui then
-        gui:Destroy()
+    if value then
+        Panel.Size = UDim2.fromOffset(CONFIG.Width, 65)
+        MinBtn.Text = "+"
+    else
+        Panel.Size = UDim2.fromOffset(CONFIG.Width, CONFIG.Height)
+        MinBtn.Text = "—"
     end
 end
 
-connect(closeBtn.MouseButton1Click, cleanup)
+Connect(MinBtn.MouseButton1Click, function()
+    SetMinimized(not Minimized)
+end)
 
--- =========================================================
--- FINAL
--- =========================================================
+--==================================================
+-- RESPAWN
+--==================================================
 
-print("✅ AliceHUB v2 berhasil dimuat!")
+Connect(Player.CharacterAdded, function()
+
+    StopAllThreads()
+
+    for key, toggle in pairs(Toggles) do
+        toggle.Set(false, false)
+    end
+
+    for key in pairs(State) do
+        State[key] = false
+    end
+
+    UpdateStatus()
+end)
+
+--==================================================
+-- CLEANUP
+--==================================================
+
+local function Cleanup()
+
+    if Destroyed then
+        return
+    end
+
+    Destroyed = true
+
+    StopAllThreads()
+    DisconnectAll()
+
+    table.clear(Toggles)
+    table.clear(Tabs)
+    table.clear(Dropdowns)
+
+    if GUI then
+        GUI:Destroy()
+    end
+end
+
+CloseBtn.MouseButton1Click:Connect(Cleanup)
+
+--==================================================
+-- DONE
+--==================================================
+
+UpdateStatus()
+
+print("✅ AliceHUB v3 loaded successfully!")
