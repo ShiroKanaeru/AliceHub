@@ -1,10 +1,3 @@
--- ===================================================================
--- aliceHUB - Elegant Edition (Minimize + Close + Miring)
--- ===================================================================
--- PERINGATAN: Hanya untuk edukasi / server pribadi.
--- Risiko ban permanen jika digunakan di game publik!
--- ===================================================================
-
 local player = game.Players.LocalPlayer
 local replicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -40,14 +33,14 @@ local throwParams = {
 
 -- ================== BUAT GUI ==================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "aliceHUB"
+screenGui.Name = "AliceHUB"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama (lebih lebar dan miring)
+-- Frame utama
 local mainFrame = Instance.new("ScrollingFrame")
 mainFrame.Size = UDim2.new(0, 340, 0, 460)
 mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
-mainFrame.Rotation = -2 -- efek miring
+mainFrame.Rotation = -2
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -62,39 +55,27 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 14)
 corner.Parent = mainFrame
 
--- Glass efek
+-- Glass Efek (Gue pindahin ke bawah supaya gak nutup tombol)
 local glass = Instance.new("Frame")
 glass.Size = UDim2.new(1, 0, 1, 0)
 glass.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 glass.BackgroundTransparency = 0.92
 glass.BorderSizePixel = 0
 glass.Parent = mainFrame
+glass.ZIndex = 0 -- Dibawah elemen lain
 
--- Layout utama
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 8)
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = mainFrame
-
-local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 10)
-padding.PaddingBottom = UDim.new(0, 10)
-padding.PaddingLeft = UDim.new(0, 10)
-padding.PaddingRight = UDim.new(0, 10)
-padding.Parent = mainFrame
-
--- ================== HEADER dengan tombol ==================
+-- ================== HEADER ==================
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, -10, 0, 45)
+header.Position = UDim2.new(0, 5, 0, 0)
 header.BackgroundTransparency = 1
-header.LayoutOrder = 0
 header.Parent = mainFrame
+header.ZIndex = 2
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(0.7, 0, 0.6, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
-title.Text = "✦ aliceHUB ✦"
+title.Text = "AliceHUB"
 title.TextColor3 = Color3.fromRGB(220, 200, 255)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
@@ -105,7 +86,7 @@ title.Parent = header
 local subtitle = Instance.new("TextLabel")
 subtitle.Size = UDim2.new(0.7, 0, 0.4, 0)
 subtitle.Position = UDim2.new(0, 0, 0.6, 0)
-subtitle.Text = "Auto Farm Controller"
+subtitle.Text = "https://discord.gg/kV3kg6QvM/"
 subtitle.TextColor3 = Color3.fromRGB(160, 160, 200)
 subtitle.TextSize = 11
 subtitle.Font = Enum.Font.Gotham
@@ -148,20 +129,20 @@ closeBtn.Parent = header
 -- Divider
 local divider = Instance.new("Frame")
 divider.Size = UDim2.new(1, -20, 0, 1)
+divider.Position = UDim2.new(0, 10, 0, 45)
 divider.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
 divider.BackgroundTransparency = 0.5
 divider.BorderSizePixel = 0
-divider.LayoutOrder = 1
 divider.Parent = mainFrame
+divider.ZIndex = 2
 
--- ================== SEMUA KONTEN (untuk minimize) ==================
+-- ================== KONTEN FITUR ==================
 local contentContainer = Instance.new("Frame")
-contentContainer.Size = UDim2.new(1, 0, 1, -55) -- di bawah header+divider
-contentContainer.Position = UDim2.new(0, 0, 0, 55)
+contentContainer.Size = UDim2.new(1, -20, 1, -55)
+contentContainer.Position = UDim2.new(0, 10, 0, 46)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainFrame
--- Kita akan tempatkan semua switch/dropdown di dalam contentContainer
--- Agar mudah disembunyikan saat minimize
+contentContainer.ZIndex = 2
 
 -- Layout untuk content
 local contentLayout = Instance.new("UIListLayout")
@@ -170,7 +151,7 @@ contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 contentLayout.Parent = contentContainer
 
--- ================== FUNGSI BANTUAN (gunakan contentContainer sebagai parent) ==================
+-- ================== FUNGSI SWITCH & DROPDOWN ==================
 local function createSwitch(labelText, order, onToggle)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -10, 0, 34)
@@ -180,7 +161,6 @@ local function createSwitch(labelText, order, onToggle)
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.6, 0, 1, 0)
-    label.Position = UDim2.new(0, 0, 0, 0)
     label.Text = labelText
     label.TextColor3 = Color3.fromRGB(230, 230, 255)
     label.TextSize = 13
@@ -208,7 +188,6 @@ local function createSwitch(labelText, order, onToggle)
     knob.Parent = switchBtn
 
     local state = false
-
     local function updateSwitch(newState)
         state = newState
         if state then
@@ -220,10 +199,7 @@ local function createSwitch(labelText, order, onToggle)
         end
         if onToggle then onToggle(state) end
     end
-
-    switchBtn.MouseButton1Click:Connect(function()
-        updateSwitch(not state)
-    end)
+    switchBtn.MouseButton1Click:Connect(function() updateSwitch(not state) end)
 
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Size = UDim2.new(0.2, 0, 1, 0)
@@ -242,7 +218,6 @@ local function createSwitch(labelText, order, onToggle)
         statusLabel.TextColor3 = newState and Color3.fromRGB(80, 220, 100) or Color3.fromRGB(150, 150, 180)
         if oldToggle then oldToggle(newState) end
     end
-
     return {
         setState = function(s) updateSwitch(s) end,
         getState = function() return state end,
@@ -259,7 +234,6 @@ local function createDropdown(labelText, options, order, onSelect)
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.35, 0, 1, 0)
-    label.Position = UDim2.new(0, 0, 0, 0)
     label.Text = labelText
     label.TextColor3 = Color3.fromRGB(200, 200, 230)
     label.TextSize = 12
@@ -298,7 +272,6 @@ local function createDropdown(labelText, options, order, onSelect)
     listLayout.Parent = listFrame
 
     local selected = options[1]
-
     local function rebuildList()
         for _, child in ipairs(listFrame:GetChildren()) do
             if child:IsA("TextButton") then child:Destroy() end
@@ -329,44 +302,23 @@ local function createDropdown(labelText, options, order, onSelect)
     local isOpen = false
     dropdownBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-        if isOpen then
-            local total = #options * 28 + 8
-            listFrame.Size = UDim2.new(0.6, 0, 0, total)
-        else
-            listFrame.Size = UDim2.new(0.6, 0, 0, 0)
-        end
+        listFrame.Size = isOpen and UDim2.new(0.6, 0, 0, #options * 28 + 8) or UDim2.new(0.6, 0, 0, 0)
     end)
 
-    return {
-        getSelected = function() return selected end,
-        setSelected = function(opt)
-            selected = opt
-            dropdownBtn.Text = "▼ " .. opt
-        end
-    }
+    return { getSelected = function() return selected end }
 end
 
--- ================== STATE ==================
-local states = {
-    throw = false,
-    buy = false,
-    sell = false,
-    luck = false,
-    value = false,
-    afk = false,
-}
+-- ================== STATE & THREADS ==================
+local states = { throw = false, buy = false, sell = false, luck = false, value = false, afk = false }
 local threads = {}
 local isMinimized = false
 
--- ================== BUAT FITUR ==================
+-- ================== FITUR ==================
 local orderIdx = 0
 
 -- 1. Auto Throw
-local throwDropdown = createDropdown("Throw Coin", coinList, orderIdx, function(opt)
-    throwParams[3] = opt
-end)
+local throwDropdown = createDropdown("Throw Coin", coinList, orderIdx, function(opt) throwParams[3] = opt end)
 orderIdx = orderIdx + 1
-
 local throwSwitch = createSwitch("Auto Throw", orderIdx, function(state)
     states.throw = state
     if state then
@@ -376,17 +328,13 @@ local throwSwitch = createSwitch("Auto Throw", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.throw then task.cancel(threads.throw) end
-        threads.throw = nil
-    end
+    elseif threads.throw then task.cancel(threads.throw); threads.throw = nil end
 end)
 orderIdx = orderIdx + 1
 
 -- 2. Auto Buy
-local buyDropdown = createDropdown("Buy Coin", coinList, orderIdx, function(opt) end)
+local buyDropdown = createDropdown("Buy Coin", coinList, orderIdx)
 orderIdx = orderIdx + 1
-
 local buySwitch = createSwitch("Auto Buy", orderIdx, function(state)
     states.buy = state
     if state then
@@ -396,10 +344,7 @@ local buySwitch = createSwitch("Auto Buy", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.buy then task.cancel(threads.buy) end
-        threads.buy = nil
-    end
+    elseif threads.buy then task.cancel(threads.buy); threads.buy = nil end
 end)
 orderIdx = orderIdx + 1
 
@@ -413,14 +358,11 @@ local sellSwitch = createSwitch("Auto Sell All", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.sell then task.cancel(threads.sell) end
-        threads.sell = nil
-    end
+    elseif threads.sell then task.cancel(threads.sell); threads.sell = nil end
 end)
 orderIdx = orderIdx + 1
 
--- 4. Auto Upgrade Luck
+-- 4. Upgrade Luck
 local luckSwitch = createSwitch("Upgrade Luck", orderIdx, function(state)
     states.luck = state
     if state then
@@ -430,14 +372,11 @@ local luckSwitch = createSwitch("Upgrade Luck", orderIdx, function(state)
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.luck then task.cancel(threads.luck) end
-        threads.luck = nil
-    end
+    elseif threads.luck then task.cancel(threads.luck); threads.luck = nil end
 end)
 orderIdx = orderIdx + 1
 
--- 5. Auto Upgrade Value (Cash)
+-- 5. Upgrade Value
 local valueSwitch = createSwitch("Upgrade Value (Cash)", orderIdx, function(state)
     states.value = state
     if state then
@@ -447,10 +386,7 @@ local valueSwitch = createSwitch("Upgrade Value (Cash)", orderIdx, function(stat
                 task.wait(0.5)
             end
         end)
-    else
-        if threads.value then task.cancel(threads.value) end
-        threads.value = nil
-    end
+    elseif threads.value then task.cancel(threads.value); threads.value = nil end
 end)
 orderIdx = orderIdx + 1
 
@@ -461,16 +397,15 @@ local afkSwitch = createSwitch("AFK Safe", orderIdx, function(state)
 end)
 orderIdx = orderIdx + 1
 
--- ================== FUNGSI MINIMIZE & CLOSE ==================
+-- ================== MINIMIZE & CLOSE ==================
 local function minimizeGUI()
     isMinimized = not isMinimized
     contentContainer.Visible = not isMinimized
     divider.Visible = not isMinimized
     minBtn.Text = isMinimized and "+" or "_"
-    -- Resize frame agar lebih kecil saat minimized
     if isMinimized then
-        mainFrame.Size = UDim2.new(0, 340, 0, 70) -- hanya header + divider (tapi divider disembunyikan)
-        mainFrame.Position = UDim2.new(0.5, -170, 0.8, -35) -- pindah ke bawah agar tidak mengganggu
+        mainFrame.Size = UDim2.new(0, 340, 0, 70)
+        mainFrame.Position = UDim2.new(0.5, -170, 0.8, -35)
     else
         mainFrame.Size = UDim2.new(0, 340, 0, 460)
         mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
@@ -478,7 +413,6 @@ local function minimizeGUI()
 end
 
 local function closeGUI()
-    -- Hentikan semua loop
     for _, name in ipairs({"throw","buy","sell","luck","value"}) do
         if threads[name] then task.cancel(threads[name]) end
     end
@@ -488,7 +422,6 @@ end
 minBtn.MouseButton1Click:Connect(minimizeGUI)
 closeBtn.MouseButton1Click:Connect(closeGUI)
 
--- ================== CLEANUP SAAT CLOSE ==================
 screenGui.AncestryChanged:Connect(function()
     if not screenGui.Parent then
         for _, name in ipairs({"throw","buy","sell","luck","value"}) do
@@ -503,5 +436,4 @@ player.CharacterAdded:Connect(function()
     end
 end)
 
-print("✨ aliceHUB Elegant siap digunakan!")
-print("⚠️ Ingat, ini hanya untuk edukasi / server pribadi.")
+print("✨ AliceHUB Elegant siap dipakai!")
