@@ -1,5 +1,5 @@
 -- ===================================================================
--- aliceHUB - Auto Farm All-in-One
+-- aliceHUB - Compact Edition (Fix Scroll)
 -- ===================================================================
 -- PERINGATAN: Hanya untuk edukasi / server pribadi.
 -- Risiko ban permanen jika digunakan di game publik!
@@ -8,7 +8,7 @@
 local player = game.Players.LocalPlayer
 local replicatedStorage = game:GetService("ReplicatedStorage")
 
--- ================== DAFTAR COIN ==================
+-- ================== DAFTAR COIN (LENGKAP) ==================
 local coinList = {
     "Basic Coin",
     "Copper Coin",
@@ -47,7 +47,6 @@ local coinList = {
     "Avalon Coin",
     "Dragonheart Coin",
     "Phoenix Coin",
-    -- Tambahkan sendiri di sini
 }
 
 -- ================== REMOTE EVENTS ==================
@@ -71,28 +70,27 @@ local throwParams = {
 
 -- ================== BUAT GUI ==================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AliceHUB"
+screenGui.Name = "aliceHUB"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 -- Frame utama
 local mainFrame = Instance.new("ScrollingFrame")
-mainFrame.Size = UDim2.new(0, 340, 0, 480)
-mainFrame.Position = UDim2.new(0.5, -170, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 300, 0, 420)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -210)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
-mainFrame.ScrollBarThickness = 6
+mainFrame.ScrollBarThickness = 5
 mainFrame.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 200)
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 14)
+corner.CornerRadius = UDim.new(0, 12)
 corner.Parent = mainFrame
 
--- Glass efek
 local glass = Instance.new("Frame")
 glass.Size = UDim2.new(1, 0, 1, 0)
 glass.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -100,47 +98,46 @@ glass.BackgroundTransparency = 0.92
 glass.BorderSizePixel = 0
 glass.Parent = mainFrame
 
--- Layout utama
 local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 12)
+layout.Padding = UDim.new(0, 8)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Parent = mainFrame
 
 local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 15)
-padding.PaddingBottom = UDim.new(0, 15)
-padding.PaddingLeft = UDim.new(0, 12)
-padding.PaddingRight = UDim.new(0, 12)
+padding.PaddingTop = UDim.new(0, 10)
+padding.PaddingBottom = UDim.new(0, 10)
+padding.PaddingLeft = UDim.new(0, 10)
+padding.PaddingRight = UDim.new(0, 10)
 padding.Parent = mainFrame
 
 -- ================== HEADER ==================
 local header = Instance.new("Frame")
-header.Size = UDim2.new(1, -10, 0, 50)
+header.Size = UDim2.new(1, -10, 0, 40)
 header.BackgroundTransparency = 1
 header.LayoutOrder = 0
 header.Parent = mainFrame
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 1, 0)
-title.Text = "✦ AliceHUB ✦"
+title.Size = UDim2.new(1, 0, 0.6, 0)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.Text = "✦ aliceHUB ✦"
 title.TextColor3 = Color3.fromRGB(220, 200, 255)
-title.TextSize = 22
+title.TextSize = 18
 title.Font = Enum.Font.GothamBold
 title.BackgroundTransparency = 1
 title.Parent = header
 
 local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(1, 0, 0, 18)
-subtitle.Position = UDim2.new(0, 0, 1, -18)
+subtitle.Size = UDim2.new(1, 0, 0.4, 0)
+subtitle.Position = UDim2.new(0, 0, 0.6, 0)
 subtitle.Text = "Auto Farm Controller"
 subtitle.TextColor3 = Color3.fromRGB(160, 160, 200)
-subtitle.TextSize = 12
+subtitle.TextSize = 11
 subtitle.Font = Enum.Font.Gotham
 subtitle.BackgroundTransparency = 1
 subtitle.Parent = header
 
--- Garis pemisah
 local divider = Instance.new("Frame")
 divider.Size = UDim2.new(1, -20, 0, 1)
 divider.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
@@ -152,40 +149,38 @@ divider.Parent = mainFrame
 -- ================== FUNGSI BANTUAN ==================
 local function createSwitch(labelText, order, onToggle)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -10, 0, 40)
+    container.Size = UDim2.new(1, -10, 0, 34)
     container.BackgroundTransparency = 1
     container.LayoutOrder = order
     container.Parent = mainFrame
 
-    -- Label
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.6, 0, 1, 0)
     label.Position = UDim2.new(0, 0, 0, 0)
     label.Text = labelText
     label.TextColor3 = Color3.fromRGB(230, 230, 255)
-    label.TextSize = 14
+    label.TextSize = 13
     label.Font = Enum.Font.GothamSemibold
     label.BackgroundTransparency = 1
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = container
 
-    -- Toggle switch (bulat)
     local switchBtn = Instance.new("ImageButton")
-    switchBtn.Size = UDim2.new(0, 44, 0, 24)
-    switchBtn.Position = UDim2.new(1, -44, 0.5, -12)
+    switchBtn.Size = UDim2.new(0, 40, 0, 22)
+    switchBtn.Position = UDim2.new(1, -40, 0.5, -11)
     switchBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
     switchBtn.BackgroundTransparency = 0.3
     switchBtn.BorderSizePixel = 0
-    switchBtn.Image = "rbxassetid://3570695787" -- rounded rectangle
+    switchBtn.Image = "rbxassetid://3570695787"
     switchBtn.ScaleType = Enum.ScaleType.Slice
     switchBtn.SliceCenter = Rect.new(4, 4, 12, 12)
     switchBtn.Parent = container
 
     local knob = Instance.new("ImageLabel")
-    knob.Size = UDim2.new(0, 18, 0, 18)
-    knob.Position = UDim2.new(0, 3, 0.5, -9)
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = UDim2.new(0, 3, 0.5, -8)
     knob.BackgroundTransparency = 1
-    knob.Image = "rbxassetid://3926305904" -- circle
+    knob.Image = "rbxassetid://3926305904"
     knob.Parent = switchBtn
 
     local state = false
@@ -194,10 +189,10 @@ local function createSwitch(labelText, order, onToggle)
         state = newState
         if state then
             switchBtn.BackgroundColor3 = Color3.fromRGB(80, 180, 255)
-            knob.Position = UDim2.new(1, -21, 0.5, -9)
+            knob.Position = UDim2.new(1, -19, 0.5, -8)
         else
             switchBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-            knob.Position = UDim2.new(0, 3, 0.5, -9)
+            knob.Position = UDim2.new(0, 3, 0.5, -8)
         end
         if onToggle then onToggle(state) end
     end
@@ -206,19 +201,17 @@ local function createSwitch(labelText, order, onToggle)
         updateSwitch(not state)
     end)
 
-    -- Status kecil
     local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(0.25, 0, 1, 0)
-    statusLabel.Position = UDim2.new(0.75, -10, 0, 0)
+    statusLabel.Size = UDim2.new(0.2, 0, 1, 0)
+    statusLabel.Position = UDim2.new(0.8, -5, 0, 0)
     statusLabel.Text = "OFF"
     statusLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
-    statusLabel.TextSize = 11
+    statusLabel.TextSize = 10
     statusLabel.Font = Enum.Font.Gotham
     statusLabel.BackgroundTransparency = 1
     statusLabel.TextXAlignment = Enum.TextXAlignment.Right
     statusLabel.Parent = container
 
-    -- Override status update dari fungsi toggle
     local oldToggle = onToggle
     local function newOnToggle(newState)
         statusLabel.Text = newState and "ON" or "OFF"
@@ -226,45 +219,37 @@ local function createSwitch(labelText, order, onToggle)
         if oldToggle then oldToggle(newState) end
     end
 
-    -- Ganti fungsi toggle
-    local function setState(newState)
-        updateSwitch(newState)
-    end
-
     return {
-        setState = setState,
+        setState = function(s) updateSwitch(s) end,
         getState = function() return state end,
         toggle = function() updateSwitch(not state) end,
-        container = container,
-        switchBtn = switchBtn,
-        statusLabel = statusLabel,
     }
 end
 
 -- ================== DROPDOWN BANTUAN ==================
 local function createDropdown(labelText, options, order, onSelect)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -10, 0, 44)
+    container.Size = UDim2.new(1, -10, 0, 36)
     container.BackgroundTransparency = 1
     container.LayoutOrder = order
     container.Parent = mainFrame
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 1, 0)
+    label.Size = UDim2.new(0.35, 0, 1, 0)
     label.Position = UDim2.new(0, 0, 0, 0)
     label.Text = labelText
     label.TextColor3 = Color3.fromRGB(200, 200, 230)
-    label.TextSize = 13
+    label.TextSize = 12
     label.Font = Enum.Font.Gotham
     label.BackgroundTransparency = 1
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = container
 
     local dropdownBtn = Instance.new("TextButton")
-    dropdownBtn.Size = UDim2.new(0.55, 0, 0.7, 0)
-    dropdownBtn.Position = UDim2.new(0.45, 0, 0.15, 0)
+    dropdownBtn.Size = UDim2.new(0.6, 0, 0.75, 0)
+    dropdownBtn.Position = UDim2.new(0.35, 0, 0.125, 0)
     dropdownBtn.Text = "▼ " .. options[1]
-    dropdownBtn.TextSize = 12
+    dropdownBtn.TextSize = 11
     dropdownBtn.Font = Enum.Font.GothamSemibold
     dropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     dropdownBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
@@ -272,18 +257,18 @@ local function createDropdown(labelText, options, order, onSelect)
     dropdownBtn.AutoButtonColor = false
     dropdownBtn.Parent = container
     local dc = Instance.new("UICorner")
-    dc.CornerRadius = UDim.new(0, 6)
+    dc.CornerRadius = UDim.new(0, 5)
     dc.Parent = dropdownBtn
 
     local listFrame = Instance.new("Frame")
-    listFrame.Size = UDim2.new(0.55, 0, 0, 0)
-    listFrame.Position = UDim2.new(0.45, 0, 0.85, 0)
+    listFrame.Size = UDim2.new(0.6, 0, 0, 0)
+    listFrame.Position = UDim2.new(0.35, 0, 0.9, 0)
     listFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
     listFrame.BorderSizePixel = 0
     listFrame.ClipsDescendants = true
     listFrame.Parent = container
     local lc = Instance.new("UICorner")
-    lc.CornerRadius = UDim.new(0, 6)
+    lc.CornerRadius = UDim.new(0, 5)
     lc.Parent = listFrame
     local listLayout = Instance.new("UIListLayout")
     listLayout.Padding = UDim.new(0, 2)
@@ -297,9 +282,9 @@ local function createDropdown(labelText, options, order, onSelect)
         end
         for _, opt in ipairs(options) do
             local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 28)
+            btn.Size = UDim2.new(1, 0, 0, 26)
             btn.Text = opt
-            btn.TextSize = 12
+            btn.TextSize = 11
             btn.Font = Enum.Font.Gotham
             btn.TextColor3 = Color3.fromRGB(220, 220, 255)
             btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
@@ -311,7 +296,7 @@ local function createDropdown(labelText, options, order, onSelect)
             btn.MouseButton1Click:Connect(function()
                 selected = opt
                 dropdownBtn.Text = "▼ " .. opt
-                listFrame.Size = UDim2.new(0.55, 0, 0, 0)
+                listFrame.Size = UDim2.new(0.6, 0, 0, 0)
                 if onSelect then onSelect(opt) end
             end)
         end
@@ -322,10 +307,10 @@ local function createDropdown(labelText, options, order, onSelect)
     dropdownBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         if isOpen then
-            local total = #options * 30 + 10
-            listFrame.Size = UDim2.new(0.55, 0, 0, total)
+            local total = #options * 28 + 8
+            listFrame.Size = UDim2.new(0.6, 0, 0, total)
         else
-            listFrame.Size = UDim2.new(0.55, 0, 0, 0)
+            listFrame.Size = UDim2.new(0.6, 0, 0, 0)
         end
     end)
 
@@ -350,12 +335,15 @@ local states = {
 local threads = {}
 
 -- ================== BUAT FITUR ==================
--- 1. Auto Throw (dengan dropdown coin)
-local throwDropdown = createDropdown("Coin Throw", coinList, 2, function(opt)
+local orderIdx = 2
+
+-- 1. Auto Throw
+local throwDropdown = createDropdown("Throw Coin", coinList, orderIdx, function(opt)
     throwParams[3] = opt
 end)
+orderIdx = orderIdx + 1
 
-local throwSwitch = createSwitch("Auto Throw", 3, function(state)
+local throwSwitch = createSwitch("Auto Throw", orderIdx, function(state)
     states.throw = state
     if state then
         threads.throw = task.spawn(function()
@@ -369,13 +357,13 @@ local throwSwitch = createSwitch("Auto Throw", 3, function(state)
         threads.throw = nil
     end
 end)
+orderIdx = orderIdx + 1
 
--- 2. Auto Buy (dengan dropdown coin)
-local buyDropdown = createDropdown("Buy Coin", coinList, 4, function(opt)
-    -- nothing
-end)
+-- 2. Auto Buy
+local buyDropdown = createDropdown("Buy Coin", coinList, orderIdx, function(opt) end)
+orderIdx = orderIdx + 1
 
-local buySwitch = createSwitch("Auto Buy", 5, function(state)
+local buySwitch = createSwitch("Auto Buy", orderIdx, function(state)
     states.buy = state
     if state then
         threads.buy = task.spawn(function()
@@ -389,9 +377,10 @@ local buySwitch = createSwitch("Auto Buy", 5, function(state)
         threads.buy = nil
     end
 end)
+orderIdx = orderIdx + 1
 
 -- 3. Auto Sell All
-local sellSwitch = createSwitch("Auto Sell All", 6, function(state)
+local sellSwitch = createSwitch("Auto Sell All", orderIdx, function(state)
     states.sell = state
     if state then
         threads.sell = task.spawn(function()
@@ -405,9 +394,10 @@ local sellSwitch = createSwitch("Auto Sell All", 6, function(state)
         threads.sell = nil
     end
 end)
+orderIdx = orderIdx + 1
 
 -- 4. Auto Upgrade Luck
-local luckSwitch = createSwitch("Upgrade Luck", 7, function(state)
+local luckSwitch = createSwitch("Upgrade Luck", orderIdx, function(state)
     states.luck = state
     if state then
         threads.luck = task.spawn(function()
@@ -421,9 +411,10 @@ local luckSwitch = createSwitch("Upgrade Luck", 7, function(state)
         threads.luck = nil
     end
 end)
+orderIdx = orderIdx + 1
 
 -- 5. Auto Upgrade Value (Cash)
-local valueSwitch = createSwitch("Upgrade Value (Cash)", 8, function(state)
+local valueSwitch = createSwitch("Upgrade Value (Cash)", orderIdx, function(state)
     states.value = state
     if state then
         threads.value = task.spawn(function()
@@ -437,29 +428,29 @@ local valueSwitch = createSwitch("Upgrade Value (Cash)", 8, function(state)
         threads.value = nil
     end
 end)
+orderIdx = orderIdx + 1
 
 -- 6. AFK Safe
-local afkSwitch = createSwitch("AFK Safe", 9, function(state)
+local afkSwitch = createSwitch("AFK Safe", orderIdx, function(state)
     states.afk = state
     events.afk:FireServer(state)
 end)
+orderIdx = orderIdx + 1
 
 -- ================== CLEANUP ==================
 player.CharacterAdded:Connect(function()
-    -- Matikan semua fitur saat respawn (biar aman)
     for _, sw in ipairs({throwSwitch, buySwitch, sellSwitch, luckSwitch, valueSwitch}) do
         if sw.getState() then sw.toggle() end
     end
-    -- AFK biarkan, karena mungkin tetap berguna
 end)
 
 screenGui.AncestryChanged:Connect(function()
     if not screenGui.Parent then
-        for _, name in pairs({"throw","buy","sell","luck","value"}) do
+        for _, name in ipairs({"throw","buy","sell","luck","value"}) do
             if threads[name] then task.cancel(threads[name]) end
         end
     end
 end)
 
-print("✨ AliceHUB siap digunakan!")
-print("⚠️ Ingat, ini hanya untuk pribadi.")
+print("✨ aliceHUB Compact siap digunakan!")
+print("⚠️ Ingat, ini hanya untuk edukasi / server pribadi.")
