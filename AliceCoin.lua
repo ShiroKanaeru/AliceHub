@@ -1,5 +1,5 @@
 -- ===================================================================
--- aliceHUB - Compact Edition (Fix Scroll)
+-- aliceHUB - Elegant Edition (Minimize + Close + Miring)
 -- ===================================================================
 -- PERINGATAN: Hanya untuk edukasi / server pribadi.
 -- Risiko ban permanen jika digunakan di game publik!
@@ -8,45 +8,16 @@
 local player = game.Players.LocalPlayer
 local replicatedStorage = game:GetService("ReplicatedStorage")
 
--- ================== DAFTAR COIN (LENGKAP) ==================
+-- ================== DAFTAR COIN ==================
 local coinList = {
-    "Basic Coin",
-    "Copper Coin",
-    "Fortune Coin",
-    "Fire Coin",
-    "Volt Coin",
-    "Aether Coin",
-    "Starlight Coin",
-    "Galaxy Coin",
-    "Void Coin",
-    "Chronos Coin",
-    "Eclipse Coin",
-    "Mirage Coin",
-    "Obsidian Coin",
-    "Tempest Coin",
-    "Soul Coin",
-    "Paradox Coin",
-    "Miracle Coin",
-    "Nexus Coin",
-    "Apex Coin",
-    "Infinity Coin",
-    "Grace Coin",
-    "Dominion Coin",
-    "Empyrean Coin",
-    "Atlas Coin",
-    "Judgement Coin",
-    "Hercules Coin",
-    "Helios Coin",
-    "Nyx Coin",
-    "Titan Coin",
-    "Zeus Coin",
-    "Runic Coin",
-    "Amethyst Coin",
-    "Merlin Coin",
-    "Eldritch Coin",
-    "Avalon Coin",
-    "Dragonheart Coin",
-    "Phoenix Coin",
+    "Basic Coin", "Copper Coin", "Fortune Coin", "Fire Coin", "Volt Coin",
+    "Aether Coin", "Starlight Coin", "Galaxy Coin", "Void Coin", "Chronos Coin",
+    "Eclipse Coin", "Mirage Coin", "Obsidian Coin", "Tempest Coin", "Soul Coin",
+    "Paradox Coin", "Miracle Coin", "Nexus Coin", "Apex Coin", "Infinity Coin",
+    "Grace Coin", "Dominion Coin", "Empyrean Coin", "Atlas Coin", "Judgement Coin",
+    "Hercules Coin", "Helios Coin", "Nyx Coin", "Titan Coin", "Zeus Coin",
+    "Runic Coin", "Amethyst Coin", "Merlin Coin", "Eldritch Coin", "Avalon Coin",
+    "Dragonheart Coin", "Phoenix Coin",
 }
 
 -- ================== REMOTE EVENTS ==================
@@ -58,7 +29,6 @@ local events = {
     afk = replicatedStorage.Assets.Events.SetAFKSafe,
 }
 
--- Parameter throw (sesuaikan)
 local throwParams = {
     1.4278748995675,
     Vector3.new(-1158.4721679688, 0.72600001096725, -176.51705932617),
@@ -73,10 +43,11 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "aliceHUB"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Frame utama
+-- Frame utama (lebih lebar dan miring)
 local mainFrame = Instance.new("ScrollingFrame")
-mainFrame.Size = UDim2.new(0, 300, 0, 420)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -210)
+mainFrame.Size = UDim2.new(0, 340, 0, 460)
+mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
+mainFrame.Rotation = -2 -- efek miring
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -88,9 +59,10 @@ mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
+corner.CornerRadius = UDim.new(0, 14)
 corner.Parent = mainFrame
 
+-- Glass efek
 local glass = Instance.new("Frame")
 glass.Size = UDim2.new(1, 0, 1, 0)
 glass.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -98,6 +70,7 @@ glass.BackgroundTransparency = 0.92
 glass.BorderSizePixel = 0
 glass.Parent = mainFrame
 
+-- Layout utama
 local layout = Instance.new("UIListLayout")
 layout.Padding = UDim.new(0, 8)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -111,33 +84,68 @@ padding.PaddingLeft = UDim.new(0, 10)
 padding.PaddingRight = UDim.new(0, 10)
 padding.Parent = mainFrame
 
--- ================== HEADER ==================
+-- ================== HEADER dengan tombol ==================
 local header = Instance.new("Frame")
-header.Size = UDim2.new(1, -10, 0, 40)
+header.Size = UDim2.new(1, -10, 0, 45)
 header.BackgroundTransparency = 1
 header.LayoutOrder = 0
 header.Parent = mainFrame
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0.6, 0)
+title.Size = UDim2.new(0.7, 0, 0.6, 0)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.Text = "✦ aliceHUB ✦"
 title.TextColor3 = Color3.fromRGB(220, 200, 255)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
 title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
 local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(1, 0, 0.4, 0)
+subtitle.Size = UDim2.new(0.7, 0, 0.4, 0)
 subtitle.Position = UDim2.new(0, 0, 0.6, 0)
 subtitle.Text = "Auto Farm Controller"
 subtitle.TextColor3 = Color3.fromRGB(160, 160, 200)
 subtitle.TextSize = 11
 subtitle.Font = Enum.Font.Gotham
 subtitle.BackgroundTransparency = 1
+subtitle.TextXAlignment = Enum.TextXAlignment.Left
 subtitle.Parent = header
 
+-- Tombol Minimize (_)
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 30, 0, 24)
+minBtn.Position = UDim2.new(1, -60, 0.5, -12)
+minBtn.Text = "_"
+minBtn.TextSize = 16
+minBtn.TextColor3 = Color3.fromRGB(200, 200, 230)
+minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+minBtn.BorderSizePixel = 0
+minBtn.Font = Enum.Font.GothamBold
+minBtn.AutoButtonColor = false
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minBtn
+minBtn.Parent = header
+
+-- Tombol Close (X)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 24)
+closeBtn.Position = UDim2.new(1, -30, 0.5, -12)
+closeBtn.Text = "✕"
+closeBtn.TextSize = 14
+closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+closeBtn.BorderSizePixel = 0
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.AutoButtonColor = false
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeBtn
+closeBtn.Parent = header
+
+-- Divider
 local divider = Instance.new("Frame")
 divider.Size = UDim2.new(1, -20, 0, 1)
 divider.BackgroundColor3 = Color3.fromRGB(100, 100, 150)
@@ -146,13 +154,29 @@ divider.BorderSizePixel = 0
 divider.LayoutOrder = 1
 divider.Parent = mainFrame
 
--- ================== FUNGSI BANTUAN ==================
+-- ================== SEMUA KONTEN (untuk minimize) ==================
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(1, 0, 1, -55) -- di bawah header+divider
+contentContainer.Position = UDim2.new(0, 0, 0, 55)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = mainFrame
+-- Kita akan tempatkan semua switch/dropdown di dalam contentContainer
+-- Agar mudah disembunyikan saat minimize
+
+-- Layout untuk content
+local contentLayout = Instance.new("UIListLayout")
+contentLayout.Padding = UDim.new(0, 8)
+contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+contentLayout.Parent = contentContainer
+
+-- ================== FUNGSI BANTUAN (gunakan contentContainer sebagai parent) ==================
 local function createSwitch(labelText, order, onToggle)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -10, 0, 34)
     container.BackgroundTransparency = 1
     container.LayoutOrder = order
-    container.Parent = mainFrame
+    container.Parent = contentContainer
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.6, 0, 1, 0)
@@ -226,13 +250,12 @@ local function createSwitch(labelText, order, onToggle)
     }
 end
 
--- ================== DROPDOWN BANTUAN ==================
 local function createDropdown(labelText, options, order, onSelect)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -10, 0, 36)
     container.BackgroundTransparency = 1
     container.LayoutOrder = order
-    container.Parent = mainFrame
+    container.Parent = contentContainer
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.35, 0, 1, 0)
@@ -333,9 +356,10 @@ local states = {
     afk = false,
 }
 local threads = {}
+local isMinimized = false
 
 -- ================== BUAT FITUR ==================
-local orderIdx = 2
+local orderIdx = 0
 
 -- 1. Auto Throw
 local throwDropdown = createDropdown("Throw Coin", coinList, orderIdx, function(opt)
@@ -437,13 +461,34 @@ local afkSwitch = createSwitch("AFK Safe", orderIdx, function(state)
 end)
 orderIdx = orderIdx + 1
 
--- ================== CLEANUP ==================
-player.CharacterAdded:Connect(function()
-    for _, sw in ipairs({throwSwitch, buySwitch, sellSwitch, luckSwitch, valueSwitch}) do
-        if sw.getState() then sw.toggle() end
+-- ================== FUNGSI MINIMIZE & CLOSE ==================
+local function minimizeGUI()
+    isMinimized = not isMinimized
+    contentContainer.Visible = not isMinimized
+    divider.Visible = not isMinimized
+    minBtn.Text = isMinimized and "+" or "_"
+    -- Resize frame agar lebih kecil saat minimized
+    if isMinimized then
+        mainFrame.Size = UDim2.new(0, 340, 0, 70) -- hanya header + divider (tapi divider disembunyikan)
+        mainFrame.Position = UDim2.new(0.5, -170, 0.8, -35) -- pindah ke bawah agar tidak mengganggu
+    else
+        mainFrame.Size = UDim2.new(0, 340, 0, 460)
+        mainFrame.Position = UDim2.new(0.5, -170, 0.5, -230)
     end
-end)
+end
 
+local function closeGUI()
+    -- Hentikan semua loop
+    for _, name in ipairs({"throw","buy","sell","luck","value"}) do
+        if threads[name] then task.cancel(threads[name]) end
+    end
+    screenGui:Destroy()
+end
+
+minBtn.MouseButton1Click:Connect(minimizeGUI)
+closeBtn.MouseButton1Click:Connect(closeGUI)
+
+-- ================== CLEANUP SAAT CLOSE ==================
 screenGui.AncestryChanged:Connect(function()
     if not screenGui.Parent then
         for _, name in ipairs({"throw","buy","sell","luck","value"}) do
@@ -452,5 +497,11 @@ screenGui.AncestryChanged:Connect(function()
     end
 end)
 
-print("✨ aliceHUB Compact siap digunakan!")
+player.CharacterAdded:Connect(function()
+    for _, sw in ipairs({throwSwitch, buySwitch, sellSwitch, luckSwitch, valueSwitch}) do
+        if sw.getState() then sw.toggle() end
+    end
+end)
+
+print("✨ aliceHUB Elegant siap digunakan!")
 print("⚠️ Ingat, ini hanya untuk edukasi / server pribadi.")
